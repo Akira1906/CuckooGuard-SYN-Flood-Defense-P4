@@ -1,0 +1,305 @@
+# proto-file: p4/config/v1/p4info.proto
+# proto-message: p4.config.v1.P4Info
+
+pkg_info {
+  arch: "v1model"
+}
+tables {
+  preamble {
+    id: 37375156
+    name: "MyIngress.ipv4_lpm"
+    alias: "ipv4_lpm"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: LPM
+  }
+  action_refs {
+    id: 28792405
+  }
+  action_refs {
+    id: 25652968
+  }
+  action_refs {
+    id: 21257015
+  }
+  initial_default_action {
+    action_id: 25652968
+  }
+  size: 1024
+}
+tables {
+  preamble {
+    id: 46329177
+    name: "MyIngress.connections"
+    alias: "connections"
+  }
+  match_fields {
+    id: 1
+    name: "meta.connectionHash"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  action_refs {
+    id: 28066744
+  }
+  action_refs {
+    id: 21257015
+  }
+  initial_default_action {
+    action_id: 21257015
+  }
+  size: 4096
+}
+actions {
+  preamble {
+    id: 21257015
+    name: "NoAction"
+    alias: "NoAction"
+    annotations: "@noWarn(\"unused\")"
+  }
+}
+actions {
+  preamble {
+    id: 25652968
+    name: "MyIngress.drop"
+    alias: "drop"
+  }
+}
+actions {
+  preamble {
+    id: 28792405
+    name: "MyIngress.ipv4_forward"
+    alias: "ipv4_forward"
+  }
+  params {
+    id: 1
+    name: "dstAddr"
+    bitwidth: 48
+  }
+  params {
+    id: 2
+    name: "port"
+    bitwidth: 9
+  }
+}
+actions {
+  preamble {
+    id: 20869111
+    name: "MyIngress.send_digest_connection"
+    alias: "send_digest_connection"
+  }
+}
+actions {
+  preamble {
+    id: 23903434
+    name: "MyIngress.send_digest_debug"
+    alias: "send_digest_debug"
+  }
+}
+actions {
+  preamble {
+    id: 24544128
+    name: "MyIngress.compute_connection_hash"
+    alias: "compute_connection_hash"
+  }
+}
+actions {
+  preamble {
+    id: 19069513
+    name: "MyIngress.create_syn_cookie_packet"
+    alias: "create_syn_cookie_packet"
+  }
+}
+actions {
+  preamble {
+    id: 19456130
+    name: "MyIngress.compute_cookie_value"
+    alias: "compute_cookie_value"
+  }
+}
+actions {
+  preamble {
+    id: 24078137
+    name: "MyIngress.validate_syn_cookie"
+    alias: "validate_syn_cookie"
+  }
+}
+actions {
+  preamble {
+    id: 17274621
+    name: "MyIngress.compute_tcp_length"
+    alias: "compute_tcp_length"
+  }
+}
+actions {
+  preamble {
+    id: 23889395
+    name: "MyIngress.create_new_tcp_connection"
+    alias: "create_new_tcp_connection"
+  }
+}
+actions {
+  preamble {
+    id: 31286183
+    name: "MyIngress.create_ack_response"
+    alias: "create_ack_response"
+  }
+}
+actions {
+  preamble {
+    id: 28066744
+    name: "MyIngress.saveDifferenceValue"
+    alias: "saveDifferenceValue"
+  }
+  params {
+    id: 1
+    name: "difference"
+    bitwidth: 32
+  }
+}
+actions {
+  preamble {
+    id: 19037879
+    name: "MyIngress.forward_request"
+    alias: "forward_request"
+  }
+}
+digests {
+  preamble {
+    id: 394698674
+    name: "learn_connection_t"
+    alias: "learn_connection_t"
+  }
+  type_spec {
+    struct {
+      name: "learn_connection_t"
+    }
+  }
+}
+digests {
+  preamble {
+    id: 391797020
+    name: "learn_debug_t"
+    alias: "learn_debug_t"
+  }
+  type_spec {
+    struct {
+      name: "learn_debug_t"
+    }
+  }
+}
+type_info {
+  structs {
+    key: "learn_connection_t"
+    value {
+      members {
+        name: "type"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 8
+            }
+          }
+        }
+      }
+      members {
+        name: "connection_hash"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+      members {
+        name: "seqNo"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+      members {
+        name: "connection_hash_rev"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+      members {
+        name: "seqNo_rev"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+    }
+  }
+  structs {
+    key: "learn_debug_t"
+    value {
+      members {
+        name: "type"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 8
+            }
+          }
+        }
+      }
+      members {
+        name: "data"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+      members {
+        name: "extra_1"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+      members {
+        name: "extra_2"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+      members {
+        name: "extra_3"
+        type_spec {
+          bitstring {
+            bit {
+              bitwidth: 32
+            }
+          }
+        }
+      }
+    }
+  }
+}

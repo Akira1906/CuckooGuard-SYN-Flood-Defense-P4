@@ -1,0 +1,8 @@
+*.log
+*.pcap
+*log.txt
+*1.txt
+__pycache__
+*.p4i
+*.p4info.txtpb
+proxy.json
