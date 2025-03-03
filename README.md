@@ -1,4 +1,4 @@
-# SYN Flood Defense in Data Plane
+# SYN Flood Defense in Progammable Data Plane
 
 ## SYN Cookie
 
