@@ -146,6 +146,7 @@ struct metadata_t {
     // new introduced metadata
     bit<1> sip_meta_valid;
     bit<1> tcp_valid;
+    bit<1> udp_payload_valid;
     
     bit<32> timestamp_now_copy;
     bit<32> timestamp_minus_servertime;
@@ -153,6 +154,10 @@ struct metadata_t {
     
     bit<1> bloom_read_1;
     bit<1> bloom_read_2;
+    // new introduced metadata
+    bit<32> bloom_hash_1;
+    bit<32> bloom_hash_2;
+
     bool bloom_read_passed;
     bool ingress_is_server_port;
     bit<1> ack_verify_timediff_exceeded_limit;
@@ -230,6 +235,7 @@ parser SwitchIngressParser(
     
     state parse_udp_payload {
         pkt.extract(hdr.udp_payload);
+        meta.udp_payload_valid = 1
         transition accept;
     }
 }
@@ -394,6 +400,7 @@ control SwitchIngress(
         
     action bypass_egress(){
         standard_metadata.egress_spec = 511; // BMv2 uses 511 as a drop port
+        // TODO: we do not really use this fuction what is even the functionality in the original implementation?
     }
     action dont_bypass_egress(){
         // Do nothing
@@ -601,78 +608,114 @@ control SwitchIngress(
     
     // bloom filter for flows
 	Register<bit<1>,_ >(32w4096) reg_bloom_1;
-    RegisterAction<bit<1>, _, bit<1>>(reg_bloom_1) regact_bloom_1_get = 
-    {
-        void apply(inout bit<1> value, out bit<1> ret){
-            ret = value;
-        }
-    };
-    RegisterAction<bit<1>, _, bit<1>>(reg_bloom_1) regact_bloom_1_set = 
-    {
-        void apply(inout bit<1> value, out bit<1> ret){
-            value = 1;
-            ret = 0;
-        }
-    };
+    // RegisterAction<bit<1>, _, bit<1>>(reg_bloom_1) regact_bloom_1_get = 
+    // {
+    //     void apply(inout bit<1> value, out bit<1> ret){
+    //         ret = value;
+    //     }
+    // };
+    // RegisterAction<bit<1>, _, bit<1>>(reg_bloom_1) regact_bloom_1_set = 
+    // {
+    //     void apply(inout bit<1> value, out bit<1> ret){
+    //         value = 1;
+    //         ret = 0;
+    //     }
+    // };
 
     Register<bit<1>,_ >(32w4096) reg_bloom_2;
-    RegisterAction<bit<1>, _, bit<1>>(reg_bloom_2) regact_bloom_2_get = 
-    {
-        void apply(inout bit<1> value, out bit<1> ret){
-            ret = value;
-        }
-    };
-    RegisterAction<bit<1>, _, bit<1>>(reg_bloom_2) regact_bloom_2_set = 
-    {
-        void apply(inout bit<1> value, out bit<1> ret){
-            value = 1;
-            ret = 0;
-        }
-    };
+    // RegisterAction<bit<1>, _, bit<1>>(reg_bloom_2) regact_bloom_2_get = 
+    // {
+    //     void apply(inout bit<1> value, out bit<1> ret){
+    //         ret = value;
+    //     }
+    // };
+    // RegisterAction<bit<1>, _, bit<1>>(reg_bloom_2) regact_bloom_2_set = 
+    // {
+    //     void apply(inout bit<1> value, out bit<1> ret){
+    //         value = 1;
+    //         ret = 0;
+    //     }
+    // };
 
-    Hash<bit<12>>(HashAlgorithm_t.CRC16) hash_1;
-    Hash<bit<12>>(HashAlgorithm_t.CRC32) hash_2;
+    // Hash<bit<12>>(HashAlgorithm.crc16) hash_1;
+    // Hash<bit<12>>(HashAlgorithm.crc32) hash_2;
+
+// NOTES:
+// this would be worth a shot, if the bloom filter complains about too large values or something
+// bit<12> index = meta.bloom_hash_1[11:0]; // Extracts only the lower 12 bits
+// req_bloom_1.write(index, (bit<1>)1);
+
+
     action set_bloom_1_a(){
-        regact_bloom_1_set.execute(hash_1.get({ hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port,hdr.tcp.dst_port }));
+        // bit<12> index = hash_1.get({hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port});
+        hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            (bit<32>)4095);
+        reg_bloom_1.write(meta.bloom_hash_1, (bit<1>) 1);
+        // regact_bloom_1_set.execute(hash_1.get({ hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port,hdr.tcp.dst_port }));
     }
     action set_bloom_2_a(){
-        regact_bloom_2_set.execute(hash_2.get({ 3w1, hdr.ipv4.src_addr, 3w1,  hdr.ipv4.dst_addr,  3w1, hdr.tcp.src_port,  3w1, hdr.tcp.dst_port }));
+        // regact_bloom_2_set.execute(hash_2.get({ 3w1, hdr.ipv4.src_addr, 3w1,  hdr.ipv4.dst_addr,  3w1, hdr.tcp.src_port,  3w1, hdr.tcp.dst_port }));
+        // bit<12> index = hash_2.get({3w1, hdr.ipv4.src_addr, 3w1, hdr.ipv4.dst_addr, 3w1, hdr.tcp.src_port, 3w1, hdr.tcp.dst_port});
+        hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            (bit<32>)4095);
+        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
     }
     action get_bloom_1_a(){
-        ig_md.bloom_read_1=regact_bloom_1_get.execute(hash_1.get({ hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port,hdr.tcp.dst_port }));
+        // ig_md.bloom_read_1=regact_bloom_1_get.execute(hash_1.get({ hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port,hdr.tcp.dst_port }));
+        hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            (bit<32>)4095);
+
+        // bit<12> index = hash_1.get({hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port});
+        reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
     }
     action get_bloom_2_a(){
-        ig_md.bloom_read_2=regact_bloom_2_get.execute(hash_2.get({ 3w1, hdr.ipv4.src_addr, 3w1,  hdr.ipv4.dst_addr,  3w1, hdr.tcp.src_port,  3w1, hdr.tcp.dst_port }));
+        // ig_md.bloom_read_2=regact_bloom_2_get.execute(hash_2.get({ 3w1, hdr.ipv4.src_addr, 3w1,  hdr.ipv4.dst_addr,  3w1, hdr.tcp.src_port,  3w1, hdr.tcp.dst_port }));
+        // bit<12> index = hash_2.get({3w1, hdr.ipv4.src_addr, 3w1, hdr.ipv4.dst_addr, 3w1, hdr.tcp.src_port, 3w1, hdr.tcp.dst_port});
+        hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            (bit<32>)4095);
+        reg_bloom_2.read(meta.bloom_read_2, meta.bloom_hash_2);
     }
     
     // packet in-out related
 
     action naive_routing(){
-        @in_hash{ ig_intr_tm_md.ucast_egress_port = (bit<9>) hdr.ipv4.dst_addr[31:24]; }
+    standard_metadata.egress_spec = (bit<9>) hdr.ipv4.dst_addr[31:24];
     hdr.ethernet.src_addr=1;
     hdr.ethernet.dst_addr[47:8] = 0; 
-    @in_hash{hdr.ethernet.dst_addr[7:0]=hdr.ipv4.dst_addr[31:24];} 
+    @in_hash{hdr.ethernet.dst_addr[7:0] = hdr.ipv4.dst_addr[31:24];} 
     }
     
     action craft_onward_ack(){
-        hdr.tcp.seq_no=hdr.tcp.seq_no-1;
-        hdr.tcp.data_offset=5;
+        hdr.tcp.seq_no = hdr.tcp.seq_no - 1;
+        hdr.tcp.data_offset = 5;
         //add setup tag
-        hdr.tcp.flag_ece=1;
+        hdr.tcp.flag_ece = 1;
     }
 
     // finally, decide next step for all types of packets
     // traffic, stop at first pass
     action client_to_server_nonsyn_ongoing(){
-        route_to(SERVER_PORT); bypass_egress(); dont_drop();
-    hdr.sip_meta.setInvalid(); hdr.ethernet.ether_type=ETHERTYPE_IPV4; 
+        route_to(SERVER_PORT);
+        // bypass_egress();
+        // dont_drop();
+        hdr.sip_meta.setInvalid();
+        hdr.ethernet.ether_type=ETHERTYPE_IPV4; 
     }
     action server_to_client_normal_traffic(){
-        hdr.sip_meta.setInvalid();  hdr.ethernet.ether_type=ETHERTYPE_IPV4;
-        naive_routing(); bypass_egress(); dont_drop();
+        hdr.sip_meta.setInvalid();
+        hdr.ethernet.ether_type=ETHERTYPE_IPV4;
+        naive_routing();
+        // bypass_egress();
+        // dont_drop();
     }
     action non_tcp_traffic(){
-        naive_routing(); bypass_egress(); dont_drop();
+        naive_routing();
+        // bypass_egress();
+        // dont_drop();
     }
     // hash calc
     action start_sipcalc_synack(){
@@ -680,57 +723,76 @@ control SwitchIngress(
         hdr.sip_meta.egr_port=ig_intr_md.ingress_port; 
         
         hdr.sip_meta.round=2;
-        do_recirc(); dont_bypass_egress(); dont_drop();
+        resubmit();
+        // do_recirc();
+        // dont_bypass_egress(); 
+        // dont_drop();
     }
     action start_sipcalc_tagack(){
         hdr.sip_meta.callback_type=CALLBACK_TYPE_TAGACK;
         hdr.sip_meta.egr_port=SERVER_PORT; 
         
         hdr.sip_meta.round=2;
-        do_recirc(); dont_bypass_egress(); dont_drop();
+        resubmit();
+        // do_recirc();
+        // dont_bypass_egress();
+        // dont_drop();
     }
     action continue_sipcalc_round4to6(){
         hdr.sip_meta.round=6;
-        do_recirc(); dont_bypass_egress(); dont_drop();
+        resubmit();
+        // do_recirc();
+        // dont_bypass_egress();
+        // dont_drop();
     }
     action pre_finalize_synack(){
         hdr.sip_meta.round=10;
-        route_to(hdr.sip_meta.egr_port); dont_bypass_egress(); dont_drop();
+        route_to(hdr.sip_meta.egr_port);
+        // dont_bypass_egress();
+        // dont_drop();
     }
     action pre_finalize_tagack(){
         hdr.sip_meta.round=10;
-        do_recirc(); dont_bypass_egress(); dont_drop();
+        resubmit();
+        // do_recirc();
+        // dont_bypass_egress();
+        // dont_drop();
     }
     
     action finalize_tagack(){
         route_to(hdr.sip_meta.egr_port);
         //don't bypass egress, perform checksum update in egress deparser 
-        dont_bypass_egress();
+        // dont_bypass_egress();
         hdr.sip_meta.round=99; //DO_CHECKSUM
         // if failed cookie check, drop
         ig_intr_dprsr_md.drop_ctl = (bit<3>) ig_md.ack_verify_timediff_exceeded_limit; 
-        
+        if (meta.ack_verify_timediff_exceeded_limit == 1) {
+        mark_to_drop();
+        }
+        // not sure if this should be here or the the dropping happens in craft_onward_ack()
         craft_onward_ack();
         //move this logic to egress 
         // remove sip_meta header
         //hdr.sip_meta.setInvalid();  hdr.ethernet.ether_type=ETHERTYPE_IPV4;
     }
+    // TODO check whether egress is vital to the calculatio of siphash or anything, if yes then we can't use resubmit() and instead need to use some other mechanism
+    // to recirculate the packets when necessary
     @pragma stage 11
     table tb_triage_pkt_types_nextstep {
         key = {
             hdr.sip_meta.round: exact;
-            hdr.tcp.isValid(): exact;
-            hdr.udp_payload.isValid(): exact;
+            hdr.tcp_valid: exact;
+            hdr.udp_payload_valid: exact;
             
-            ig_md.ingress_is_server_port: ternary;
+            meta.ingress_is_server_port: ternary;
             
-            ig_md.flag_syn: ternary;
-            ig_md.flag_ack: ternary;
-            ig_md.flag_ece: ternary; 
+            meta.flag_syn: ternary;
+            meta.flag_ack: ternary;
+            meta.flag_ece: ternary; 
             
             hdr.sip_meta.callback_type: ternary;
             
-            ig_md.bloom_read_passed: ternary;
+            meta.bloom_read_passed: ternary;
         }
         actions = {
             drop;
@@ -746,36 +808,36 @@ control SwitchIngress(
             finalize_tagack;
         }
         default_action = drop();
-        const entries = {//all types of packets, from linker_config.json in Lucid
+        // const entries = {//all types of packets, from linker_config.json in Lucid
              
-             //"event" : "udp_from_server_time"
-             (0,false,true,   true,    _,_,_,  _, _): drop(); //already saved time delta
-             //"event" : "iptcp_to_server_syn"
-             (0,true,false,   false,   1,0,_,  _, _ ): start_sipcalc_synack();
-             //"event" : "iptcp_to_server_non_syn"
-             (0,true,false,   false,   0,_,_,  _, false): start_sipcalc_tagack();
-             (0,true,false,   false,   0,_,_,  _, true): client_to_server_nonsyn_ongoing();
+        //      //"event" : "udp_from_server_time"
+        //      (0,false,true,   true,    _,_,_,  _, _): drop(); //already saved time delta
+        //      //"event" : "iptcp_to_server_syn"
+        //      (0,true,false,   false,   1,0,_,  _, _ ): start_sipcalc_synack();
+        //      //"event" : "iptcp_to_server_non_syn"
+        //      (0,true,false,   false,   0,_,_,  _, false): start_sipcalc_tagack();
+        //      (0,true,false,   false,   0,_,_,  _, true): client_to_server_nonsyn_ongoing();
              
-             //"event" : "iptcp_from_server_tagged"
-             (0,true,false,   true,    _,_,1,  _, _): drop(); //already added to bf
-             //"event" : "iptcp_from_server_non_tagged"
-             (0,true,false,   true,    _,_,0,  _, _): server_to_client_normal_traffic();
-             //"event" : "non_tcp_in"
-             (0,false,true, false,     _,_,_,  _, _): non_tcp_traffic();
-             (0,false,false, _,     _,_,_,  _, _): non_tcp_traffic();
+        //      //"event" : "iptcp_from_server_tagged"
+        //      (0,true,false,   true,    _,_,1,  _, _): drop(); //already added to bf
+        //      //"event" : "iptcp_from_server_non_tagged"
+        //      (0,true,false,   true,    _,_,0,  _, _): server_to_client_normal_traffic();
+        //      //"event" : "non_tcp_in"
+        //      (0,false,true, false,     _,_,_,  _, _): non_tcp_traffic();
+        //      (0,false,false, _,     _,_,_,  _, _): non_tcp_traffic();
              
-             //continue calculation, after initial round
-             //round 4->6
-             (4,true,false,  _,     _,_,_,  _, _): continue_sipcalc_round4to6();
-             //round 8->10
-             (8,true,false,  _,     _,_,_,  CALLBACK_TYPE_TAGACK, _): pre_finalize_tagack(); //round 8->10, tagack needs one last recirc, after 3rd pass (12 round) come back to ingress again for final determination
-             (8,true,false,  _,     _,_,_,  CALLBACK_TYPE_SYNACK, _): pre_finalize_synack(); //round 8->10, route to client
-             //round 12, tagack
-             (12,true,false, _,     _,_,_,  CALLBACK_TYPE_TAGACK, _): finalize_tagack(); //route to server, drop if bad cookie 
-        }
+        //      //continue calculation, after initial round
+        //      //round 4->6
+        //      (4,true,false,  _,     _,_,_,  _, _): continue_sipcalc_round4to6();
+        //      //round 8->10
+        //      (8,true,false,  _,     _,_,_,  CALLBACK_TYPE_TAGACK, _): pre_finalize_tagack(); //round 8->10, tagack needs one last recirc, after 3rd pass (12 round) come back to ingress again for final determination
+        //      (8,true,false,  _,     _,_,_,  CALLBACK_TYPE_SYNACK, _): pre_finalize_synack(); //round 8->10, route to client
+        //      //round 12, tagack
+        //      (12,true,false, _,     _,_,_,  CALLBACK_TYPE_TAGACK, _): finalize_tagack(); //route to server, drop if bad cookie 
+        // }
         size = 32;
     }
-        
+        // TODO: continue here, also figure out the issue about recirculation
 	Random< bit<1> >() rng;
 
     apply {    

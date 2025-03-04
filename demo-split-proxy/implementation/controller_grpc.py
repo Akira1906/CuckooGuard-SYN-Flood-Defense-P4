@@ -31,6 +31,20 @@ class DigestController():
 # table_add tb_maybe_sip_init sip_continue_round8  1 1 8 =>
 # table_add tb_maybe_sip_init sip_end_round12_tagack_verify 1 1 12 =>
 
+# table_add tb_triage_pkt_types_nextstep drop  0 0 1   1 0 0  * *  => 
+# table_add tb_triage_pkt_types_nextstep start_sipcalc_synack  0 1 0   0 1 0  * *  => 
+# table_add tb_triage_pkt_types_nextstep start_sipcalc_tagack  0 1 0   0 0 *  * 0  => 
+# table_add tb_triage_pkt_types_nextstep client_to_server_nonsyn_ongoing  0 1 0   0 0 *  * 1  => 
+# table_add tb_triage_pkt_types_nextstep drop  0 1 0   1 * *  * *  => 
+# table_add tb_triage_pkt_types_nextstep server_to_client_normal_traffic  0 1 0   1 * 0  * *  => 
+# table_add tb_triage_pkt_types_nextstep non_tcp_traffic  0 0 1   * * *  * *  => 
+# table_add tb_triage_pkt_types_nextstep non_tcp_traffic  0 0 0   * * *  * *  => 
+# table_add tb_triage_pkt_types_nextstep continue_sipcalc_round4to6  4 1 0   * * *  * *  => 
+# table_add tb_triage_pkt_types_nextstep pre_finalize_tagack  8 1 0   * * *  CALLBACK_TYPE_TAGACK *  => 
+# table_add tb_triage_pkt_types_nextstep pre_finalize_synack  8 1 0   * * *  CALLBACK_TYPE_SYNACK *  => 
+# table_add tb_triage_pkt_types_nextstep finalize_tagack  12 1 0   * * *  CALLBACK_TYPE_TAGACK *  => 
+
+
 
         
         for neigh in topo.get_neighbors('s1'):
