@@ -11,9 +11,9 @@ echo "P is: $P"
 # set -x
 p4c --target bmv2 \
     --arch v1model \
-    --p4runtime-files syn-cookie/p4src/proxy.p4info.txtpb \
-    syn-cookie/p4src/proxy.p4\
-    -o syn-cookie/p4src/
+    --p4runtime-files ../implementation/p4src/proxy.p4info.txtpb \
+    ../implementation/p4src/proxy.p4\
+    -o ../implementation/p4src/
 
 # Remove any log file written in an earlier run, otherwise
 # simple_switch_grpc will append the new log messages to the end of
@@ -22,7 +22,7 @@ p4c --target bmv2 \
 
 sudo simple_switch_grpc \
      --device-id 1 \
-     --log-file syn-cookie_ss-log \
+     --log-file ../implementation/syn-cookie_ss-log \
      --log-flush \
      --dump-packet-data 10000 \
      -i 1@veth0 \
@@ -44,9 +44,9 @@ sleep 2
 # line.
 # source /home/tristan/p4dev-python-venv/bin/activate
 echo "Start SYN-Cookie Control Plane application"
-cd syn-cookie
+cd ../implementation
 python3 -u controller_grpc.py &> controller.log &
-cd ..
+cd ../unit-test
 sleep 2
 # sudo netstat -tulnp
 # sleep 20
@@ -58,7 +58,7 @@ sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
     -i 1@veth1 \
     -i 2@veth3 \
     -i 3@veth5 \
-    --test-params="grpcaddr='localhost:9559';p4info='syn-cookie/p4src/proxy.p4info.txtpb';config='syn-cookie/p4src/proxy.json'" \
+    --test-params="grpcaddr='localhost:9559';p4info='../implementation/p4src/proxy.p4info.txtpb';config='../implementation/p4src/proxy.json'" \
     --test-dir ptf
     # -i 3@veth7 \
     # -i 4@veth9 \

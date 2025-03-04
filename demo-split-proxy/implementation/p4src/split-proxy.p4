@@ -17,7 +17,7 @@
 */
 
 #include <core.p4>
-#include <tna.p4>
+#include <v1model.p4>
 
 // Testbed parameters
 const bit<9> SERVER_PORT=12; 
@@ -42,6 +42,9 @@ const bit<4> CALLBACK_TYPE_TAGACK=2;
 //siphash-related consts
 #define DEFAULT_SIP_KEY_0 0x33323130
 #define DEFAULT_SIP_KEY_1 0x42413938
+// moved this here from SwitchIngress
+#define TIMESTAMP_NOW_TICK_16 ((bit<32>) meta.ingress_mac_tstamp[47:16])
+
 const bit<32> const_0 = 0x70736575;
 const bit<32> const_1 = 0x6e646f6d;
 const bit<32> const_2 = 0x6e657261;
@@ -64,11 +67,10 @@ header sip_meta_h {
     bit<32> v_2;
     bit<32> v_3;
     bit<8> round;
-    @padding bit<4> __padding1;
+    // @padding bit<4> __padding1;
     bit<4> callback_type;
-    @padding bit<7> __padding2;
-    bit<9> egr_port;
-    
+    // @padding bit<7> __padding2;
+    bit<9> egr_port; // This will be mapped to standard_metadata.egress_spec
     bit<32> cookie_time;
     bit<32> ack_verify_timediff;
 }
@@ -132,12 +134,18 @@ struct header_t {
     udp_payload_h udp_payload;
 }
 
-struct ig_metadata_t {
-    //siphash calc related
+struct metadata_t {
+    // Ingress
+    // commbined ig _medadata_t and eg_metadata_t into one since that's what bmv2 supports
+    // siphash calc related
     bit<32> a_0;
     bit<32> a_1;
     bit<32> a_2;
     bit<32> a_3;
+
+    // new introduced metadata
+    bit<1> sip_meta_valid;
+    bit<1> tcp_valid;
     
     bit<32> timestamp_now_copy;
     bit<32> timestamp_minus_servertime;
@@ -155,59 +163,26 @@ struct ig_metadata_t {
     
     bit<16> tcp_total_len;//always 20
     bit<1> redo_checksum;
-}
-struct eg_metadata_t {
-    //siphash calc related
-    bit<32> a_0;
-    bit<32> a_1;
-    bit<32> a_2;
-    bit<32> a_3;
-    
-    bit<32> msg_var;
+
+    // Egress
     
     bit<32> cookie_val;
     bit<32> incoming_ack_minus_1;
     bit<32> incoming_seq_plus_1;
 
-    bit<16> tcp_total_len;//always 20
-    bit<1> redo_checksum;
     bit<1> tb_output_stage;
+
+    standard_metadata_t standard_metadata;
 }
 
-
-parser TofinoIngressParser(
-        packet_in pkt,
-        inout ig_metadata_t ig_md,
-        out ingress_intrinsic_metadata_t ig_intr_md) {
-    state start {
-        pkt.extract(ig_intr_md);
-        transition select(ig_intr_md.resubmit_flag) {
-            1 : parse_resubmit;
-            0 : parse_port_metadata;
-        }
-    }
-
-    state parse_resubmit {
-        // Parse resubmitted packet here.
-        pkt.advance(64); 
-        transition accept;
-    }
-
-    state parse_port_metadata {
-        pkt.advance(64);  //tofino 1 port metadata size
-        transition accept;
-    }
-}
 parser SwitchIngressParser(
         packet_in pkt,
         out header_t hdr,
-        out ig_metadata_t ig_md,
-        out ingress_intrinsic_metadata_t ig_intr_md) {
+        out metadata_t meta,
+        out standard_metadata_t standard_metadata) {
 
-    TofinoIngressParser() tofino_parser;
 
     state start {
-        tofino_parser.apply(pkt, ig_md, ig_intr_md);
         transition parse_ethernet;
     }
     
@@ -222,6 +197,8 @@ parser SwitchIngressParser(
     
     state parse_sip_meta {
         pkt.extract(hdr.sip_meta);
+        // meta.sip_meta_valid = hdr.sip_meta.isValid() ? 1 : 0;
+        meta.sip_meta_valid = 1;
         transition parse_ipv4;
     }
     
@@ -236,6 +213,8 @@ parser SwitchIngressParser(
     
     state parse_tcp {
         pkt.extract(hdr.tcp);
+        // meta.tcp_valid = hdr.tcp.isValid() ? 1 : 0;
+        meta.tcp_valid = 1;
         transition select(hdr.ipv4.total_len) {
             default : accept;
         }
@@ -414,31 +393,30 @@ control SwitchIngress(
         inout ingress_intrinsic_metadata_for_tm_t ig_intr_tm_md) {
         
     action bypass_egress(){
-        ig_intr_tm_md.bypass_egress=1;
+        standard_metadata.egress_spec = 511; // BMv2 uses 511 as a drop port
     }
     action dont_bypass_egress(){
-        ig_intr_tm_md.bypass_egress=0;
+        // Do nothing
     }
      
     action drop() {
-        ig_intr_dprsr_md.drop_ctl = 0x1; // Drop packet.
-        bypass_egress(); // for safety, bypass egress as well
+        mark_to_drop();
     }
     action dont_drop(){
-        ig_intr_dprsr_md.drop_ctl = 0x0; 
+        //  Do nothing 
     }
     
     
     action nop() {
     }
     action route_to(bit<9> port){
-        ig_intr_tm_md.ucast_egress_port=port;
-    hdr.ethernet.src_addr=1; 
-    hdr.ethernet.dst_addr=(bit<48>) port; 
+        standard_metadata.egress_spec = port;
+        hdr.ethernet.src_addr=1; 
+        hdr.ethernet.dst_addr=(bit<48>) port; 
     }
     action reflect(){
         //send you back to where you're from
-        route_to(ig_intr_md.ingress_port);
+        route_to(standard_metadata.ingress_port);
     }
     
     action do_recirc(){
@@ -448,7 +426,8 @@ control SwitchIngress(
     
     //siphash init
     action sip_init(bit<32> key_0, bit<32> key_1){
-        hdr.sip_meta.setValid(); hdr.ethernet.ether_type=ETHERTYPE_SIPH_INTM;
+        hdr.sip_meta.setValid();
+        hdr.ethernet.ether_type = ETHERTYPE_SIPH_INTM;
         hdr.sip_meta.round = 0;   
             
         hdr.sip_meta.v_0 = key_0 ^ const_0;
@@ -456,13 +435,14 @@ control SwitchIngress(
         hdr.sip_meta.v_2 = key_0 ^ const_2;
         hdr.sip_meta.v_3 = key_1 ^ const_3;
         
-        ig_md.msg_var = hdr.ipv4.src_addr;
+        meta.msg_var = hdr.ipv4.src_addr;
     }
     
     action sip_init_default_key(){
-        bit<32> key_0=DEFAULT_SIP_KEY_0;
-        bit<32> key_1=DEFAULT_SIP_KEY_1;
-        hdr.sip_meta.setValid(); hdr.ethernet.ether_type=ETHERTYPE_SIPH_INTM;
+        bit<32> key_0 = DEFAULT_SIP_KEY_0;
+        bit<32> key_1 = DEFAULT_SIP_KEY_1;
+        hdr.sip_meta.setValid();
+        hdr.ethernet.ether_type=ETHERTYPE_SIPH_INTM;
         hdr.sip_meta.round = 0;   
             
         hdr.sip_meta.v_0 = key_0 ^ const_0;
@@ -470,14 +450,14 @@ control SwitchIngress(
         hdr.sip_meta.v_2 = key_0 ^ const_2;
         hdr.sip_meta.v_3 = key_1 ^ const_3;
         
-        ig_md.msg_var = hdr.ipv4.src_addr;
+        meta.msg_var = hdr.ipv4.src_addr;
     }
     
     action sip_continue_round4(){
-        ig_md.msg_var = hdr.tcp.src_port ++ hdr.tcp.dst_port;
+        meta.msg_var = {hdr.tcp.src_port ++ hdr.tcp.dst_port};
     }
     action sip_continue_round8(){
-        ig_md.msg_var = 0;
+        meta.msg_var = 0;
     }
     action sip_end_round12_tagack_verify(){
         //do nothing for now, use next stage to check ack_verify_timediff
@@ -486,8 +466,10 @@ control SwitchIngress(
     @pragma stage 0
     table tb_maybe_sip_init {
         key = {
-            hdr.sip_meta.isValid(): exact;
-            hdr.tcp.isValid(): exact;
+            meta.sip_meta_valid: exact;
+            // hdr.sip_meta.isValid(): exact;
+            // hdr.tcp.isValid(): exact;
+            meta.tcp_valid: exact;
             hdr.sip_meta.round: ternary;
         }
         actions = {
@@ -500,100 +482,114 @@ control SwitchIngress(
         }
         default_action = nop; 
         size = 16;
-        const entries={
-            (false, true, _): sip_init_default_key(); //change key from control plane
-            (true, true, 4): sip_continue_round4();
-            (true, true, 8): sip_continue_round8();
-            (true, true, 12): sip_end_round12_tagack_verify();
-        }
+        // const entries={
+        //     (false, true, _): sip_init_default_key(); //change key from control plane
+        //     (true, true, 4): sip_continue_round4();
+        //     (true, true, 8): sip_continue_round8();
+        //     (true, true, 12): sip_end_round12_tagack_verify();
+        // }
     }
     
     action sip_1_odd(){
         //i_3 = i_3 ^ message
-        hdr.sip_meta.v_3 = hdr.sip_meta.v_3 ^ ig_md.msg_var;
+        hdr.sip_meta.v_3 = hdr.sip_meta.v_3 ^ meta.msg_var;
     }
     action sip_1_a(){
         //a_0 = i_0 + i_1
-        ig_md.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_1;
+        meta.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_1;
         //a_2 = i_2 + i_3
-        ig_md.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_3;
+        meta.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_3;
         //a_1 = i_1 << 5
-        @in_hash { ig_md.a_1 = hdr.sip_meta.v_1[26:0] ++ hdr.sip_meta.v_1[31:27]; }
+        // @in_hash {
+        meta.a_1 = hdr.sip_meta.v_1[26:0] ++ hdr.sip_meta.v_1[31:27];
     }
     action sip_1_b(){
         //a_3 = i_3 << 8
-        ig_md.a_3 = hdr.sip_meta.v_3[23:0] ++ hdr.sip_meta.v_3[31:24];
+        meta.a_3 = hdr.sip_meta.v_3[23:0] ++ hdr.sip_meta.v_3[31:24];
     }
     action sip_2_a(){
         //b_1 = a_1 ^ a_0
-        hdr.sip_meta.v_1 = ig_md.a_1 ^ ig_md.a_0;
+        hdr.sip_meta.v_1 = meta.a_1 ^ meta.a_0;
         //b_3 = a_3 ^ a_2
-        hdr.sip_meta.v_3 = ig_md.a_3 ^ ig_md.a_2;
+        hdr.sip_meta.v_3 = meta.a_3 ^ meta.a_2;
         // b_0 = a_0 << 16
-        hdr.sip_meta.v_0 = ig_md.a_0[15:0] ++ ig_md.a_0[31:16];
+        hdr.sip_meta.v_0 = meta.a_0[15:0] ++ meta.a_0[31:16];
         //b_2 = a_2
-        hdr.sip_meta.v_2 = ig_md.a_2;
+        hdr.sip_meta.v_2 = meta.a_2;
     }
     action sip_3_a(){
         //c_2 = b_2 + b_1
-        ig_md.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_1;
+        meta.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_1;
         //c_0 = b_0 + b_3
-        ig_md.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_3;
+        meta.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_3;
         //c_1 = b_1 << 13
-        @in_hash { ig_md.a_1 = hdr.sip_meta.v_1[18:0] ++ hdr.sip_meta.v_1[31:19]; }
+        // @in_hash { 
+        meta.a_1 = hdr.sip_meta.v_1[18:0] ++ hdr.sip_meta.v_1[31:19];
     }
     action sip_3_b(){
         //c_3 = b_3 << 7
-        @in_hash { ig_md.a_3 = hdr.sip_meta.v_3[24:0] ++ hdr.sip_meta.v_3[31:25]; }
+        // @in_hash { 
+        meta.a_3 = hdr.sip_meta.v_3[24:0] ++ hdr.sip_meta.v_3[31:25];
     }
 
     action sip_4_a(){
         //d_1 = c_1 ^ c_2
-        hdr.sip_meta.v_1 = ig_md.a_1 ^ ig_md.a_2;
+        hdr.sip_meta.v_1 = meta.a_1 ^ meta.a_2;
         //d_3 = c_3 ^ c_0 i
-        hdr.sip_meta.v_3 = ig_md.a_3 ^ ig_md.a_0;
+        hdr.sip_meta.v_3 = meta.a_3 ^ meta.a_0;
         //d_2 = c_2 << 16
-        hdr.sip_meta.v_2 = ig_md.a_2[15:0] ++ ig_md.a_2[31:16];
+        hdr.sip_meta.v_2 = meta.a_2[15:0] ++ meta.a_2[31:16];
     }
     action sip_4_b_odd(){
         //d_0 = c_0
-        hdr.sip_meta.v_0 = ig_md.a_0;
+        hdr.sip_meta.v_0 = meta.a_0;
     }
     action sip_4_b_even(){
         //d_0 = c_0 ^ message
-        hdr.sip_meta.v_0 = ig_md.a_0 ^ ig_md.msg_var;
+        hdr.sip_meta.v_0 = meta.a_0 ^ meta.msg_var;
     }
   
     // time-delta 
-    
-    Register<bit<32>,_ >(1) reg_timedelta;
-    RegisterAction<bit<32>, _, bit<32>>(reg_timedelta) regact_timedelta_write = 
-    {
-        void apply(inout bit<32> value, out bit<32> ret){
-            value = ig_md.timestamp_minus_servertime;
-            ret = 0;
-        }
-    };
-    RegisterAction<bit<32>, _, bit<32>>(reg_timedelta) regact_timedelta_read = 
-    {
-        void apply(inout bit<32> value, out bit<32> ret){
-            ret = value;
-        }
-    };
+
+    // register req_timedelta {
+    //     bit<32>;
+    // }
+    Register< bit<32> >(1) req_timedelta;
+
+    // Register<bit<32>,_ >(1) reg_timedelta;
+    // RegisterAction<bit<32>, _, bit<32>>(reg_timedelta) regact_timedelta_write = 
+    // {
+    //     void apply(inout bit<32> value, out bit<32> ret){
+    //         value = ig_md.timestamp_minus_servertime;
+    //         ret = 0;
+    //     }
+    // };
+    // RegisterAction<bit<32>, _, bit<32>>(reg_timedelta) regact_timedelta_read = 
+    // {
+    //     void apply(inout bit<32> value, out bit<32> ret){
+    //         ret = value;
+    //     }
+    // };
         
     //#define TIMESTAMP_NOW_USEC ((bit<32>) ig_intr_md.ingress_mac_tstamp[41:10])
-    #define TIMESTAMP_NOW_TICK_16 ((bit<32>) ig_intr_md.ingress_mac_tstamp[47:16])
+    // #define TIMESTAMP_NOW_TICK_16 ((bit<32>) meta.ingress_mac_tstamp[47:16])
 	action timedelta_step0(){
-        @in_hash{ ig_md.timestamp_now_copy = TIMESTAMP_NOW_TICK_16; }
+        meta.timestamp_now_copy = TIMESTAMP_NOW_TICK_16;
     }
     action timedelta_step1_write(){
-        ig_md.timestamp_minus_servertime = ig_md.timestamp_now_copy - hdr.udp_payload.timestamp;
+        meta.timestamp_minus_servertime = meta.timestamp_now_copy - hdr.udp_payload.timestamp;
     }
     action timedelta_step2_write(){
-        regact_timedelta_write.execute(0);
+        // regact_timedelta_write.execute(0);
+        // register_write(reg_timedelta, 0, meta.timestamp_minus_servertime);
+        reg_timedelta.write((bit<32>) 0, meta.timestamp_minus_servertime);
+
     }
     action timedelta_step1_read(){
         ig_md.timestamp_minus_servertime = regact_timedelta_read.execute(0);
+        reg_timedelta.read(meta.timestamp_minus_servertime, (bit<32>) 0);
+        // port_pkt_ip_bytes_in.write(istd.ingress_port, tmp);maybe this is enough
+        // tmp = port_pkt_ip_bytes_in.read(istd.ingress_port); no mentioning of the offset
     }
     action timedelta_step2_read(){
         hdr.sip_meta.cookie_time = ig_md.timestamp_now_copy - ig_md.timestamp_minus_servertime;
