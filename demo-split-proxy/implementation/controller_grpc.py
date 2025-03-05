@@ -46,6 +46,14 @@ class DigestController():
 
 
 
+# table_add tb_decide_output_type_1 craft_synack_reply  1 1 12 CALLBACK_TYPE_SYNACK => 
+# table_add tb_decide_output_type_1 sip_final_xor_with_ackm1  1 1 12 CALLBACK_TYPE_TAGACK => 
+# table_add tb_decide_output_type_1 clean_up  1 1 12 * => 
+
+# table_add tb_decide_output_type_2 sip_final_xor_with_time  1 1 12 CALLBACK_TYPE_SYNACK => 
+# table_add tb_decide_output_type_2 verify_timediff  1 1 12 CALLBACK_TYPE_TAGACK => 
+
+
         
         for neigh in topo.get_neighbors('s1'):
             if topo.isHost(neigh):

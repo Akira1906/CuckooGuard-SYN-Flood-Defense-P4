@@ -43,7 +43,8 @@ const bit<4> CALLBACK_TYPE_TAGACK=2;
 #define DEFAULT_SIP_KEY_0 0x33323130
 #define DEFAULT_SIP_KEY_1 0x42413938
 // moved this here from SwitchIngress
-#define TIMESTAMP_NOW_TICK_16 ((bit<32>) meta.ingress_mac_tstamp[47:16])
+// use timestamp values that are actually available in bmv2 instead
+#define TIMESTAMP_NOW_TICK_16 ((bit<32>) standard_metadata.ingress_global_timestamp[47:16])
 
 const bit<32> const_0 = 0x70736575;
 const bit<32> const_1 = 0x6e646f6d;
@@ -158,8 +159,10 @@ struct metadata_t {
     bit<32> bloom_hash_1;
     bit<32> bloom_hash_2;
 
-    bool bloom_read_passed;
-    bool ingress_is_server_port;
+    // bool bloom_read_passed;
+    // bool ingress_is_server_port;
+    bit<1> bloom_read_passed;
+    bit<1> ingress_is_server_port;
     bit<1> ack_verify_timediff_exceeded_limit;
     
     bit<1> flag_ece;
@@ -235,82 +238,84 @@ parser SwitchIngressParser(
     
     state parse_udp_payload {
         pkt.extract(hdr.udp_payload);
-        meta.udp_payload_valid = 1
+        meta.udp_payload_valid = 1;
         transition accept;
     }
 }
 
-// ---------------------------------------------------------------------------
-// Ingress Deparser
-// ---------------------------------------------------------------------------
-control SwitchIngressDeparser(
-        packet_out pkt,
-        inout header_t hdr,
-        in ig_metadata_t ig_md,
-        in ingress_intrinsic_metadata_for_deparser_t ig_intr_dprsr_md) {
+// // ---------------------------------------------------------------------------
+// // Ingress Deparser
+// // ---------------------------------------------------------------------------
+// control SwitchIngressDeparser(
+//         packet_out pkt,
+//         inout header_t hdr,
+//         in ig_metadata_t ig_md,
+//         in ingress_intrinsic_metadata_for_deparser_t ig_intr_dprsr_md) {
     
 
-    apply {
+//     apply {
 
-        pkt.emit(hdr.ethernet);
-        pkt.emit(hdr.sip_meta);
-        pkt.emit(hdr.ipv4);
-        pkt.emit(hdr.tcp);
-        pkt.emit(hdr.udp);
-    }
+//         // maybe we need to set some headers valid or invalid based on metadata
 
-}
+//         pkt.emit(hdr.ethernet);
+//         pkt.emit(hdr.sip_meta);
+//         pkt.emit(hdr.ipv4);
+//         pkt.emit(hdr.tcp);
+//         pkt.emit(hdr.udp);
+//     }
 
-// ---------------------------------------------------------------------------
-// Egress parser
-// ---------------------------------------------------------------------------
-parser SwitchEgressParser(
-        packet_in pkt,
-        out header_t hdr,
-        out eg_metadata_t eg_md,
-        out egress_intrinsic_metadata_t eg_intr_md) {
-    state start {
-        pkt.extract(eg_intr_md);
-        transition parse_ethernet;
-    }
+// }
+
+// // ---------------------------------------------------------------------------
+// // Egress parser
+// // ---------------------------------------------------------------------------
+// parser SwitchEgressParser(
+//         packet_in pkt,
+//         out header_t hdr,
+//         out eg_metadata_t eg_md,
+//         out egress_intrinsic_metadata_t eg_intr_md) {
+//     state start {
+//         pkt.extract(eg_intr_md);
+//         transition parse_ethernet;
+//     }
     
-    state parse_ethernet {
-        pkt.extract(hdr.ethernet);
-        transition select (hdr.ethernet.ether_type) {
-            ETHERTYPE_IPV4 : parse_ipv4;
-            ETHERTYPE_SIPH_INTM: parse_sip_meta;
-            default : reject;
-        }
-    }
+//     state parse_ethernet {
+//         pkt.extract(hdr.ethernet);
+//         transition select (hdr.ethernet.ether_type) {
+//             ETHERTYPE_IPV4 : parse_ipv4;
+//             ETHERTYPE_SIPH_INTM: parse_sip_meta;
+//             default : reject;
+//         }
+//     }
     
-    state parse_sip_meta {
-        pkt.extract(hdr.sip_meta);
-        transition parse_ipv4;
-    }
+//     state parse_sip_meta {
+//         pkt.extract(hdr.sip_meta);
+//         transition parse_ipv4;
+//     }
     
-    state parse_ipv4 {
-        pkt.extract(hdr.ipv4);
-        transition select(hdr.ipv4.protocol) {
-            IP_PROTOCOLS_TCP : parse_tcp;
-            IP_PROTOCOLS_UDP : parse_udp;
-            default : accept;
-        }
-    }
+//     state parse_ipv4 {
+//         pkt.extract(hdr.ipv4);
+//         transition select(hdr.ipv4.protocol) {
+//             IP_PROTOCOLS_TCP : parse_tcp;
+//             IP_PROTOCOLS_UDP : parse_udp;
+//             default : accept;
+//         }
+//     }
     
-    state parse_tcp {
-        pkt.extract(hdr.tcp);
-        transition select(hdr.ipv4.total_len) {
-            default : accept;
-        }
-    }
+//     state parse_tcp {
+//         pkt.extract(hdr.tcp);
+//         transition select(hdr.ipv4.total_len) {
+//             default : accept;
+//         }
+//     }
     
-    state parse_udp {
-        pkt.extract(hdr.udp);
-        transition select(hdr.udp.dst_port) {
-            default: accept;
-        }
-    }
-}
+//     state parse_udp {
+//         pkt.extract(hdr.udp);
+//         transition select(hdr.udp.dst_port) {
+//             default: accept;
+//         }
+//     }
+// }
 
 // ---------------------------------------------------------------------------
 // Egress Deparser
@@ -318,58 +323,63 @@ parser SwitchEgressParser(
 control SwitchEgressDeparser(
         packet_out pkt,
         inout header_t hdr,
-        in eg_metadata_t eg_md,
-        in egress_intrinsic_metadata_for_deparser_t eg_intr_md_for_dprsr) {
+        in metadata_t meta // why use inout? and not in like it was before
+        ) {
    	
-    Checksum() ip_checksum;
-    Checksum() tcp_checksum;    
+    // Checksum() ip_checksum;
+    // Checksum() tcp_checksum;    
     
     apply {
-    
-	   if(eg_md.redo_checksum == 1){	        
-              hdr.ipv4.hdr_checksum = ip_checksum.update({
-              hdr.ipv4.version,
-              hdr.ipv4.ihl,
-              hdr.ipv4.diffserv,
-              hdr.ipv4.total_len,
-              hdr.ipv4.identification,
-              hdr.ipv4.flags,
-              hdr.ipv4.frag_offset,
-              hdr.ipv4.ttl,
-              hdr.ipv4.protocol,
-              hdr.ipv4.src_addr,
-              hdr.ipv4.dst_addr
-          });
+        // Perform checksum update if required
+        if (meta.redo_checksum == 1) {
+            // Update IPv4 header checksum
+            update_checksum(
+                hdr.ipv4.isValid(),
+                { hdr.ipv4.version,
+                hdr.ipv4.ihl,
+                hdr.ipv4.diffserv,
+                hdr.ipv4.total_len,
+                hdr.ipv4.identification,
+                hdr.ipv4.flags,
+                hdr.ipv4.frag_offset,
+                hdr.ipv4.ttl,
+                hdr.ipv4.protocol,
+                hdr.ipv4.src_addr,
+                hdr.ipv4.dst_addr },
+                hdr.ipv4.hdr_checksum,
+                HashAlgorithm.csum16
+            );
 
-          hdr.tcp.checksum = tcp_checksum.update({
-              //==pseudo header
-                      hdr.ipv4.src_addr,
-                      hdr.ipv4.dst_addr,
-                      8w0,
-                      hdr.ipv4.protocol,
-                      eg_md.tcp_total_len,
-              //==actual header
-                      hdr.tcp.src_port,
-                      hdr.tcp.dst_port,
-                      hdr.tcp.seq_no,
-                      hdr.tcp.ack_no,
-                      hdr.tcp.data_offset,
-                      hdr.tcp.res,
-    		      hdr.tcp.flag_cwr, 
-		      hdr.tcp.flag_ece, 
-		      hdr.tcp.flag_urg, 
-		      hdr.tcp.flag_ack, 
-		      hdr.tcp.flag_psh, 
-		      hdr.tcp.flag_rst, 
-		      hdr.tcp.flag_syn, 
-		      hdr.tcp.flag_fin, 
-                      hdr.tcp.window,
-                      hdr.tcp.urgent_ptr
-                      //hdr.payload
-          });
+            // Update TCP checksum (includes pseudo-header fields)
+            update_checksum(
+                hdr.tcp.isValid(),
+                { hdr.ipv4.src_addr,
+                hdr.ipv4.dst_addr,
+                8w0,  // Zero padding
+                hdr.ipv4.protocol,
+                meta.tcp_total_len,  // Total TCP length from metadata
+                hdr.tcp.src_port,
+                hdr.tcp.dst_port,
+                hdr.tcp.seq_no,
+                hdr.tcp.ack_no,
+                hdr.tcp.data_offset,
+                hdr.tcp.res,
+                hdr.tcp.flag_cwr, 
+                hdr.tcp.flag_ece,
+                hdr.tcp.flag_urg,
+                hdr.tcp.flag_ack,
+                hdr.tcp.flag_psh,
+                hdr.tcp.flag_rst,
+                hdr.tcp.flag_syn,
+                hdr.tcp.flag_fin,
+                hdr.tcp.window,
+                hdr.tcp.urgent_ptr },
+                hdr.tcp.checksum,
+                HashAlgorithm.csum16
+            );
+        }
 
-	}//endif redo_checksum 
-
+        // Emit headers
         pkt.emit(hdr.ethernet);
         pkt.emit(hdr.sip_meta);
         pkt.emit(hdr.ipv4);
@@ -382,21 +392,18 @@ control SwitchEgressDeparser(
 // ---------------------------------------------------------------------------
 // Ingress Control
 // ---------------------------------------------------------------------------
-@pa_container_size("ingress","ig_md.a_0",32)
-@pa_container_size("ingress","ig_md.a_1",32)
-@pa_container_size("ingress","ig_md.a_2",32)
-@pa_container_size("ingress","ig_md.a_3",32)
-@pa_container_size("ingress","hdr.sip_meta.v_0",32)
-@pa_container_size("ingress","hdr.sip_meta.v_1",32)
-@pa_container_size("ingress","hdr.sip_meta.v_2",32)
-@pa_container_size("ingress","hdr.sip_meta.v_3",32)
+// @pa_container_size("ingress","ig_md.a_0",32)
+// @pa_container_size("ingress","ig_md.a_1",32)
+// @pa_container_size("ingress","ig_md.a_2",32)
+// @pa_container_size("ingress","ig_md.a_3",32)
+// @pa_container_size("ingress","hdr.sip_meta.v_0",32)
+// @pa_container_size("ingress","hdr.sip_meta.v_1",32)
+// @pa_container_size("ingress","hdr.sip_meta.v_2",32)
+// @pa_container_size("ingress","hdr.sip_meta.v_3",32)
 control SwitchIngress(
         inout header_t hdr,
-        inout ig_metadata_t ig_md,
-        in ingress_intrinsic_metadata_t ig_intr_md,
-        in ingress_intrinsic_metadata_from_parser_t ig_intr_prsr_md,
-        inout ingress_intrinsic_metadata_for_deparser_t ig_intr_dprsr_md,
-        inout ingress_intrinsic_metadata_for_tm_t ig_intr_tm_md) {
+        inout metadata_t meta,
+        inout standard_metadata_t standard_metadata) {
         
     action bypass_egress(){
         standard_metadata.egress_spec = 511; // BMv2 uses 511 as a drop port
@@ -407,7 +414,7 @@ control SwitchIngress(
     }
      
     action drop() {
-        mark_to_drop();
+        mark_to_drop(standard_metadata);
     }
     action dont_drop(){
         //  Do nothing 
@@ -461,7 +468,7 @@ control SwitchIngress(
     }
     
     action sip_continue_round4(){
-        meta.msg_var = {hdr.tcp.src_port ++ hdr.tcp.dst_port};
+        meta.msg_var = hdr.tcp.src_port ++ hdr.tcp.dst_port; // will this work? or do I need to use that super complex syntax?
     }
     action sip_continue_round8(){
         meta.msg_var = 0;
@@ -561,7 +568,7 @@ control SwitchIngress(
     // register req_timedelta {
     //     bit<32>;
     // }
-    Register< bit<32> >(1) req_timedelta;
+    register< bit<32> >(1) reg_timedelta;
 
     // Register<bit<32>,_ >(1) reg_timedelta;
     // RegisterAction<bit<32>, _, bit<32>>(reg_timedelta) regact_timedelta_write = 
@@ -593,13 +600,13 @@ control SwitchIngress(
 
     }
     action timedelta_step1_read(){
-        ig_md.timestamp_minus_servertime = regact_timedelta_read.execute(0);
+        // meta.timestamp_minus_servertime = regact_timedelta_read.execute(0);
         reg_timedelta.read(meta.timestamp_minus_servertime, (bit<32>) 0);
         // port_pkt_ip_bytes_in.write(istd.ingress_port, tmp);maybe this is enough
         // tmp = port_pkt_ip_bytes_in.read(istd.ingress_port); no mentioning of the offset
     }
     action timedelta_step2_read(){
-        hdr.sip_meta.cookie_time = ig_md.timestamp_now_copy - ig_md.timestamp_minus_servertime;
+        hdr.sip_meta.cookie_time = meta.timestamp_now_copy - meta.timestamp_minus_servertime;
 	}
 	action timedelta_step3_read(){
   		hdr.sip_meta.cookie_time= hdr.sip_meta.cookie_time >> 12;
@@ -607,7 +614,8 @@ control SwitchIngress(
         
     
     // bloom filter for flows
-	Register<bit<1>,_ >(32w4096) reg_bloom_1;
+	// register<bit<1>,_ >(32w4096) reg_bloom_1;
+    register<bit<1>>(32w4096) reg_bloom_1;
     // RegisterAction<bit<1>, _, bit<1>>(reg_bloom_1) regact_bloom_1_get = 
     // {
     //     void apply(inout bit<1> value, out bit<1> ret){
@@ -621,8 +629,8 @@ control SwitchIngress(
     //         ret = 0;
     //     }
     // };
-
-    Register<bit<1>,_ >(32w4096) reg_bloom_2;
+    // register<bit<1>,_ >(32w4096) reg_bloom_2;
+    register<bit<1>>(32w4096) reg_bloom_2;
     // RegisterAction<bit<1>, _, bit<1>>(reg_bloom_2) regact_bloom_2_get = 
     // {
     //     void apply(inout bit<1> value, out bit<1> ret){
@@ -649,7 +657,7 @@ control SwitchIngress(
     action set_bloom_1_a(){
         // bit<12> index = hash_1.get({hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port});
         hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
-            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
         reg_bloom_1.write(meta.bloom_hash_1, (bit<1>) 1);
         // regact_bloom_1_set.execute(hash_1.get({ hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port,hdr.tcp.dst_port }));
@@ -658,14 +666,14 @@ control SwitchIngress(
         // regact_bloom_2_set.execute(hash_2.get({ 3w1, hdr.ipv4.src_addr, 3w1,  hdr.ipv4.dst_addr,  3w1, hdr.tcp.src_port,  3w1, hdr.tcp.dst_port }));
         // bit<12> index = hash_2.get({3w1, hdr.ipv4.src_addr, 3w1, hdr.ipv4.dst_addr, 3w1, hdr.tcp.src_port, 3w1, hdr.tcp.dst_port});
         hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
-            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
         reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
     }
     action get_bloom_1_a(){
         // ig_md.bloom_read_1=regact_bloom_1_get.execute(hash_1.get({ hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port,hdr.tcp.dst_port }));
         hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
-            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
 
         // bit<12> index = hash_1.get({hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port});
@@ -675,7 +683,7 @@ control SwitchIngress(
         // ig_md.bloom_read_2=regact_bloom_2_get.execute(hash_2.get({ 3w1, hdr.ipv4.src_addr, 3w1,  hdr.ipv4.dst_addr,  3w1, hdr.tcp.src_port,  3w1, hdr.tcp.dst_port }));
         // bit<12> index = hash_2.get({3w1, hdr.ipv4.src_addr, 3w1, hdr.ipv4.dst_addr, 3w1, hdr.tcp.src_port, 3w1, hdr.tcp.dst_port});
         hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
-            {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort}, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
         reg_bloom_2.read(meta.bloom_read_2, meta.bloom_hash_2);
     }
@@ -720,10 +728,10 @@ control SwitchIngress(
     // hash calc
     action start_sipcalc_synack(){
         hdr.sip_meta.callback_type=CALLBACK_TYPE_SYNACK;
-        hdr.sip_meta.egr_port=ig_intr_md.ingress_port; 
+        hdr.sip_meta.egr_port=standard_metadata.ingress_port; // meta or standard_metadata ? 
         
         hdr.sip_meta.round=2;
-        resubmit();
+        // resubmit();
         // do_recirc();
         // dont_bypass_egress(); 
         // dont_drop();
@@ -733,14 +741,14 @@ control SwitchIngress(
         hdr.sip_meta.egr_port=SERVER_PORT; 
         
         hdr.sip_meta.round=2;
-        resubmit();
+        // resubmit();
         // do_recirc();
         // dont_bypass_egress();
         // dont_drop();
     }
     action continue_sipcalc_round4to6(){
         hdr.sip_meta.round=6;
-        resubmit();
+        // resubmit();
         // do_recirc();
         // dont_bypass_egress();
         // dont_drop();
@@ -753,7 +761,7 @@ control SwitchIngress(
     }
     action pre_finalize_tagack(){
         hdr.sip_meta.round=10;
-        resubmit();
+        // resubmit();
         // do_recirc();
         // dont_bypass_egress();
         // dont_drop();
@@ -765,9 +773,10 @@ control SwitchIngress(
         // dont_bypass_egress();
         hdr.sip_meta.round=99; //DO_CHECKSUM
         // if failed cookie check, drop
-        ig_intr_dprsr_md.drop_ctl = (bit<3>) ig_md.ack_verify_timediff_exceeded_limit; 
+        // ig_intr_dprsr_md.drop_ctl = (bit<3>) meta.ack_verify_timediff_exceeded_limit;
+
         if (meta.ack_verify_timediff_exceeded_limit == 1) {
-        mark_to_drop();
+        mark_to_drop(standard_metadata);
         }
         // not sure if this should be here or the the dropping happens in craft_onward_ack()
         craft_onward_ack();
@@ -781,8 +790,8 @@ control SwitchIngress(
     table tb_triage_pkt_types_nextstep {
         key = {
             hdr.sip_meta.round: exact;
-            hdr.tcp_valid: exact;
-            hdr.udp_payload_valid: exact;
+            meta.tcp_valid: exact;
+            meta.udp_payload_valid: exact;
             
             meta.ingress_is_server_port: ternary;
             
@@ -808,6 +817,7 @@ control SwitchIngress(
             finalize_tagack;
         }
         default_action = drop();
+        // TODO the table entrie types have to be changed as well
         // const entries = {//all types of packets, from linker_config.json in Lucid
              
         //      //"event" : "udp_from_server_time"
@@ -838,7 +848,7 @@ control SwitchIngress(
         size = 32;
     }
         // TODO: continue here, also figure out the issue about recirculation
-	Random< bit<1> >() rng;
+	// Random< bit<1> >() rng; why th do we need this
 
     apply {    
         //stage 0
@@ -846,7 +856,7 @@ control SwitchIngress(
        
         //calculate all other cases in parallel
         timedelta_step0();
-        if(hdr.udp_payload.isValid() && ig_intr_md.ingress_port==SERVER_PORT){
+        if(meta.udp_payload_valid == 1 && standard_metadata.ingress_port==SERVER_PORT){
             timedelta_step1_write();
             timedelta_step2_write();
             //drop(); //for full parallelization, postpone to triage table
@@ -856,32 +866,32 @@ control SwitchIngress(
             timedelta_step3_read();
         }
         
-        if(hdr.tcp.isValid() && ig_intr_md.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
+        if(meta.tcp_valid == 1 && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
             set_bloom_1_a();
             set_bloom_2_a();
-            ig_md.bloom_read_passed=false;
+            meta.bloom_read_passed=0;
             //drop(); //for full parallelization, postpone to triage table
         }else{
             get_bloom_1_a();
             get_bloom_2_a();
-            if(ig_md.bloom_read_1==1 && ig_md.bloom_read_2==1){
-                ig_md.bloom_read_passed=true;
+            if(meta.bloom_read_1==1 && meta.bloom_read_2==1){
+                meta.bloom_read_passed=1;
             }else{
-                ig_md.bloom_read_passed=false;
+                meta.bloom_read_passed=0;
             }
         }
         
         //pre-calculate conditions and save in metadata. used in final stage triage.
-        if(ig_intr_md.ingress_port==SERVER_PORT){
-            ig_md.ingress_is_server_port = true;
+        if(standard_metadata.ingress_port==SERVER_PORT){
+            meta.ingress_is_server_port = 1;
         }else{
-            ig_md.ingress_is_server_port = false;
+            meta.ingress_is_server_port = 0;
         }
 
         if(hdr.sip_meta.ack_verify_timediff==0 || hdr.sip_meta.ack_verify_timediff==1 || hdr.sip_meta.ack_verify_timediff==2){
-            ig_md.ack_verify_timediff_exceeded_limit=0;
+            meta.ack_verify_timediff_exceeded_limit=0;
         }else{
-            ig_md.ack_verify_timediff_exceeded_limit=1;
+            meta.ack_verify_timediff_exceeded_limit=1;
         }
         
         
@@ -906,23 +916,34 @@ control SwitchIngress(
         
         // hdr.sip_meta.round=hdr.sip_meta.round+2; // increment round as part of final-stage triage table
 
-        if(hdr.tcp.isValid()){
-            ig_md.flag_syn=hdr.tcp.flag_syn;
-            ig_md.flag_ack=hdr.tcp.flag_ack;
-            ig_md.flag_ece=hdr.tcp.flag_ece;
+        if(meta.tcp_valid == 1){
+            meta.flag_syn=hdr.tcp.flag_syn;
+            meta.flag_ack=hdr.tcp.flag_ack;
+            meta.flag_ece=hdr.tcp.flag_ece;
         }
         else{
-            ig_md.flag_syn=0;
-            ig_md.flag_ack=0;
-            ig_md.flag_ece=0;
+            meta.flag_syn=0;
+            meta.flag_ack=0;
+            meta.flag_ece=0;
         }
-        bit<1> rnd = rng.get();
-        if(rnd==1){
+
+
+        // // Generate a pseudo-random bit
+        bit<1> rnd;
+        hash(rnd, HashAlgorithm.crc16, (bit<32>)0, {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, (bit<32>)1);
+        if (rnd == 1) {
             route_to(68);
-        }
-        else{
+        } else {
             route_to(68+128);
         }
+        // why do we need this?
+        // bit<1> rnd = rng.get();
+        // if(rnd==1){
+        //     route_to(68);
+        // }
+        // else{
+        //     route_to(68+128);
+        // }
         tb_triage_pkt_types_nextstep.apply();
     }
 }
@@ -930,115 +951,113 @@ control SwitchIngress(
 // ---------------------------------------------------------------------------
 // Egress Control
 // ---------------------------------------------------------------------------
-@pa_container_size("egress","eg_md.a_0",32)
-@pa_container_size("egress","eg_md.a_1",32)
-@pa_container_size("egress","eg_md.a_2",32)
-@pa_container_size("egress","eg_md.a_3",32)
-@pa_container_size("egress","hdr.sip_meta.v_0",32)
-@pa_container_size("egress","hdr.sip_meta.v_1",32)
-@pa_container_size("egress","hdr.sip_meta.v_2",32)
-@pa_container_size("egress","hdr.sip_meta.v_3",32)
+// @pa_container_size("egress","eg_md.a_0",32)
+// @pa_container_size("egress","eg_md.a_1",32)
+// @pa_container_size("egress","eg_md.a_2",32)
+// @pa_container_size("egress","eg_md.a_3",32)
+// @pa_container_size("egress","hdr.sip_meta.v_0",32)
+// @pa_container_size("egress","hdr.sip_meta.v_1",32)
+// @pa_container_size("egress","hdr.sip_meta.v_2",32)
+// @pa_container_size("egress","hdr.sip_meta.v_3",32)
 control SwitchEgress(
         inout header_t hdr,
-        inout eg_metadata_t eg_md,
-        in egress_intrinsic_metadata_t eg_intr_md,
-        in egress_intrinsic_metadata_from_parser_t eg_intr_md_from_prsr,
-        inout egress_intrinsic_metadata_for_deparser_t ig_intr_dprs_md,
-        inout egress_intrinsic_metadata_for_output_port_t eg_intr_oport_md) {
+        inout metadata_t meta,
+        inout standard_metadata_t standard_metadata) {
     
    
     action sip_1_odd(){
         //i_3 = i_3 ^ message
-        hdr.sip_meta.v_3 = hdr.sip_meta.v_3 ^ eg_md.msg_var;
+        hdr.sip_meta.v_3 = hdr.sip_meta.v_3 ^ meta.msg_var;
     }
     action sip_1_a(){
         //a_0 = i_0 + i_1
-        eg_md.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_1;
+        meta.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_1;
         //a_2 = i_2 + i_3
-        eg_md.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_3;
+        meta.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_3;
         //a_1 = i_1 << 5
-        @in_hash { eg_md.a_1 = hdr.sip_meta.v_1[26:0] ++ hdr.sip_meta.v_1[31:27]; }
+        meta.a_1 = (hdr.sip_meta.v_1 << 5) | (hdr.sip_meta.v_1 >> (32 - 5));
+        // @in_hash { eg_md.a_1 = hdr.sip_meta.v_1[26:0] ++ hdr.sip_meta.v_1[31:27]; }
     }
     action sip_1_b(){
         //a_3 = i_3 << 8
-        eg_md.a_3 = hdr.sip_meta.v_3[23:0] ++ hdr.sip_meta.v_3[31:24];
+        // meta.a_3 = hdr.sip_meta.v_3[23:0] ++ hdr.sip_meta.v_3[31:24];
+        meta.a_3 = (hdr.sip_meta.v_3 << 8) | (hdr.sip_meta.v_3 >> 24);
     }
     action sip_2_a(){
         //b_1 = a_1 ^ a_0
-        hdr.sip_meta.v_1 = eg_md.a_1 ^ eg_md.a_0;
+        hdr.sip_meta.v_1 = meta.a_1 ^ meta.a_0;
         //b_3 = a_3 ^ a_2
-        hdr.sip_meta.v_3 = eg_md.a_3 ^ eg_md.a_2;
+        hdr.sip_meta.v_3 = meta.a_3 ^ meta.a_2;
         // b_0 = a_0 << 16
-        hdr.sip_meta.v_0 = eg_md.a_0[15:0] ++ eg_md.a_0[31:16];
+        hdr.sip_meta.v_0 = (meta.a_0 << 16) | (meta.a_0 >> (32 - 16));
+        // hdr.sip_meta.v_0 = eg_md.a_0[15:0] ++ eg_md.a_0[31:16];
         //b_2 = a_2
-        hdr.sip_meta.v_2 = eg_md.a_2;
+        hdr.sip_meta.v_2 = meta.a_2;
     }
     action sip_3_a(){
         //c_2 = b_2 + b_1
-        eg_md.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_1;
+        meta.a_2 = hdr.sip_meta.v_2 + hdr.sip_meta.v_1;
         //c_0 = b_0 + b_3
-        eg_md.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_3;
+        meta.a_0 = hdr.sip_meta.v_0 + hdr.sip_meta.v_3;
         //c_1 = b_1 << 13
-        @in_hash { eg_md.a_1 = hdr.sip_meta.v_1[18:0] ++ hdr.sip_meta.v_1[31:19]; }
+        meta.a_1 = (hdr.sip_meta.v_1 << 13) | (hdr.sip_meta.v_1 >> (32 - 13));
+        // @in_hash { eg_md.a_1 = hdr.sip_meta.v_1[18:0] ++ hdr.sip_meta.v_1[31:19]; }
     }
     action sip_3_b(){
         //c_3 = b_3 << 7
-        @in_hash { eg_md.a_3 = hdr.sip_meta.v_3[24:0] ++ hdr.sip_meta.v_3[31:25]; }
+        // @in_hash { eg_md.a_3 = hdr.sip_meta.v_3[24:0] ++ hdr.sip_meta.v_3[31:25]; }
+        meta.a_3 = (hdr.sip_meta.v_3 << 7) | (hdr.sip_meta.v_3 >> (32 - 7)); // Left rotate by 7
     }
 
     action sip_4_a(){
         //d_1 = c_1 ^ c_2
-        hdr.sip_meta.v_1 = eg_md.a_1 ^ eg_md.a_2;
+        hdr.sip_meta.v_1 = meta.a_1 ^ meta.a_2;
         //d_3 = c_3 ^ c_0 i
-        hdr.sip_meta.v_3 = eg_md.a_3 ^ eg_md.a_0;
+        hdr.sip_meta.v_3 = meta.a_3 ^ meta.a_0;
         //d_2 = c_2 << 16
-        hdr.sip_meta.v_2 = eg_md.a_2[15:0] ++ eg_md.a_2[31:16];
+        // hdr.sip_meta.v_2 = eg_md.a_2[15:0] ++ eg_md.a_2[31:16];
+        hdr.sip_meta.v_2 = (meta.a_2 << 16) | (meta.a_2 >> (32 - 16)); // Left rotate by 16
     }
     action sip_4_b_odd(){
         //d_0 = c_0
-        hdr.sip_meta.v_0 = eg_md.a_0;
+        hdr.sip_meta.v_0 = meta.a_0;
     }
     action sip_4_b_even(){
         //d_0 = c_0 ^ message
-        hdr.sip_meta.v_0 = eg_md.a_0 ^ eg_md.msg_var;
+        hdr.sip_meta.v_0 = meta.a_0 ^ meta.msg_var;
     }
     
     
 
     action clean_up(){
-        hdr.sip_meta.setInvalid();
+        // hdr.sip_meta.setInvalid(); not supported we need to ignore this during parsing
+        meta.sip_meta_valid = 0;
         hdr.ethernet.ether_type=ETHERTYPE_IPV4; 
     }
  
 
     action sip_final_xor_with_time(){
-        @in_hash{ hdr.tcp.seq_no = 
-            hdr.sip_meta.cookie_time ^ 
-            hdr.sip_meta.v_0 ^ hdr.sip_meta.v_1 ^ hdr.sip_meta.v_2 ^ hdr.sip_meta.v_3; 
-        }
+        hdr.tcp.seq_no = hdr.sip_meta.cookie_time ^ hdr.sip_meta.v_0 ^ hdr.sip_meta.v_1 ^ hdr.sip_meta.v_2 ^ hdr.sip_meta.v_3;
         clean_up();
     }
 
     action sip_final_xor_with_ackm1(){
-        @in_hash{ eg_md.cookie_val = 
-            eg_md.incoming_ack_minus_1 ^ 
-            hdr.sip_meta.v_0 ^ hdr.sip_meta.v_1 ^ hdr.sip_meta.v_2 ^ hdr.sip_meta.v_3; 
-        }
+        meta.cookie_val = meta.incoming_ack_minus_1 ^ hdr.sip_meta.v_0 ^ hdr.sip_meta.v_1 ^ hdr.sip_meta.v_2 ^ hdr.sip_meta.v_3;
     }
     
 	action verify_timediff(){
-	    hdr.sip_meta.ack_verify_timediff = hdr.sip_meta.cookie_time - eg_md.cookie_val; // should be 0 or 1
+	    hdr.sip_meta.ack_verify_timediff = hdr.sip_meta.cookie_time - meta.cookie_val; // should be 0 or 1
 	}
 
     action craft_synack_reply(){
-        hdr.tcp.ack_no=eg_md.incoming_seq_plus_1;
+        hdr.tcp.ack_no=meta.incoming_seq_plus_1;
         //move this call to a separate table call to avoid too many hashes in one action/table 
 	   //sip_final_xor_with_time(); // cookie_val = time ^ hash, -> synack
 	
         //swap IP
-        bit<32> tmp=hdr.ipv4.src_addr;
-        hdr.ipv4.src_addr=hdr.ipv4.dst_addr;
-        hdr.ipv4.dst_addr=tmp;
+        bit<32> tmp_ip = hdr.ipv4.src_addr;
+        hdr.ipv4.src_addr = hdr.ipv4.dst_addr;
+        hdr.ipv4.dst_addr = tmp_ip;
        
     	//swap port 
     	bit<16> tmp_port = hdr.tcp.src_port;  
@@ -1055,25 +1074,26 @@ control SwitchEgress(
         hdr.ipv4.total_len=40; 
 
         //necessary for checksum update 
-        eg_md.redo_checksum=1;
-        eg_md.tcp_total_len=20; 
+        meta.redo_checksum=1;
+        meta.tcp_total_len=20; 
 
         //routing done in ingress
     }
 
     action drop(){
-        ig_intr_dprs_md.drop_ctl=1;
+        mark_to_drop(standard_metadata);
     }
     action dont_drop(){
-        ig_intr_dprs_md.drop_ctl=0;
+        // packet is automatically forwarded
     }
 
     action nop() {
     }
+
     table tb_decide_output_type_1 {
         key = {
-            hdr.sip_meta.isValid(): exact;
-            hdr.tcp.isValid(): exact;
+            meta.sip_meta_valid: exact;
+            meta.tcp_valid: exact;
             hdr.sip_meta.round: exact;
             hdr.sip_meta.callback_type: ternary;
             //eg_md.tb_output_stage: exact; 
@@ -1086,17 +1106,17 @@ control SwitchEgress(
         }
         default_action = nop;
         size = 16;
-        const entries={
-            (true, true, 12, CALLBACK_TYPE_SYNACK): craft_synack_reply();
-            (true, true, 12, CALLBACK_TYPE_TAGACK): sip_final_xor_with_ackm1();  // cookie_val = (ack-1) ^ hash, ==? time(+1)
-            (true, true, 12, _): clean_up();
-        }
+        // const entries={
+        //     (true, true, 12, CALLBACK_TYPE_SYNACK): craft_synack_reply();
+        //     (true, true, 12, CALLBACK_TYPE_TAGACK): sip_final_xor_with_ackm1();  // cookie_val = (ack-1) ^ hash, ==? time(+1)
+        //     (true, true, 12, _): clean_up();
+        // }
     }
     
     table tb_decide_output_type_2 {
         key = {
-            hdr.sip_meta.isValid(): exact;
-            hdr.tcp.isValid(): exact;
+            meta.sip_meta_valid: exact;
+            meta.tcp_valid: exact;
             hdr.sip_meta.round: exact;
             hdr.sip_meta.callback_type: ternary;
         }
@@ -1107,26 +1127,26 @@ control SwitchEgress(
         }
         default_action = nop;
         size = 16;
-        const entries={
-            (true, true, 12, CALLBACK_TYPE_SYNACK): sip_final_xor_with_time();//need second stage to not have two hash copies in one action 
-            (true, true, 12, CALLBACK_TYPE_TAGACK): verify_timediff(); //need second stage to complete case for CALLBACK_TYPE_TAGACK 
-        }
+        // const entries={
+        //     (true, true, 12, CALLBACK_TYPE_SYNACK): sip_final_xor_with_time();//need second stage to not have two hash copies in one action 
+        //     (true, true, 12, CALLBACK_TYPE_TAGACK): verify_timediff(); //need second stage to complete case for CALLBACK_TYPE_TAGACK 
+        // }
     }
 
     apply {
 
         //stage 0
         if(hdr.sip_meta.round==2){
-            eg_md.msg_var = hdr.ipv4.dst_addr;
+            meta.msg_var = hdr.ipv4.dst_addr;
         }else
         if(hdr.sip_meta.round==6 && hdr.sip_meta.callback_type==CALLBACK_TYPE_SYNACK){
-            eg_md.msg_var = hdr.tcp.seq_no;
+            meta.msg_var = hdr.tcp.seq_no;
         }else 
         if(hdr.sip_meta.round==6 && hdr.sip_meta.callback_type==CALLBACK_TYPE_TAGACK){
-            eg_md.msg_var = hdr.tcp.seq_no - 1;
+            meta.msg_var = hdr.tcp.seq_no - 1;
         }else 
         if(hdr.sip_meta.round==10){ 
-            eg_md.msg_var = 0;  //final compression rounds is 8,9,10,11
+            meta.msg_var = 0;  //final compression rounds is 8,9,10,11
         }
 
         if(hdr.sip_meta.round != 99){
@@ -1151,11 +1171,11 @@ control SwitchEgress(
             sip_4_b_even();
             hdr.sip_meta.round=hdr.sip_meta.round+2;
 
-            eg_md.incoming_ack_minus_1=hdr.tcp.ack_no - 1;
-            eg_md.incoming_seq_plus_1=hdr.tcp.seq_no + 1;
-            eg_md.tcp_total_len=20;
+            meta.incoming_ack_minus_1=hdr.tcp.ack_no - 1;
+            meta.incoming_seq_plus_1=hdr.tcp.seq_no + 1;
+            meta.tcp_total_len=20;
             
-            eg_md.redo_checksum=0;
+            meta.redo_checksum=0;
         
         	tb_decide_output_type_1.apply(); 	 
         	tb_decide_output_type_2.apply(); 
@@ -1167,21 +1187,102 @@ control SwitchEgress(
     	    hdr.ipv4.ihl=5;
     	    hdr.ipv4.total_len=40; 
 
-            eg_md.redo_checksum=1;
-            eg_md.tcp_total_len=20; 
+            meta.redo_checksum=1;
+            meta.tcp_total_len=20; 
             // remove sip_meta header
-            hdr.sip_meta.setInvalid();  hdr.ethernet.ether_type=ETHERTYPE_IPV4;
+            // hdr.sip_meta.setInvalid();
+            meta.sip_meta_valid = 0;
+            hdr.ethernet.ether_type=ETHERTYPE_IPV4;
         }
     }//apply
 }
 
+/*************************************************************************
+************   C H E C K S U M    V E R I F I C A T I O N   *************
+*************************************************************************/
 
-Pipeline(SwitchIngressParser(),
-         SwitchIngress(),
-         SwitchIngressDeparser(),
-         SwitchEgressParser(),
-         SwitchEgress(),
-         SwitchEgressDeparser()
-         ) pipe;
+control MyVerifyChecksum(inout header_t hdr, inout metadata_t meta) {
+    apply {
+     verify_checksum(
+	    hdr.ipv4.isValid(),
+            { hdr.ipv4.version,
+	      hdr.ipv4.ihl,
+              hdr.ipv4.diffserv,
+              hdr.ipv4.total_len,
+              hdr.ipv4.identification,
+              hdr.ipv4.flags,
+              hdr.ipv4.frag_offset,
+              hdr.ipv4.ttl,
+              hdr.ipv4.protocol,
+              hdr.ipv4.src_addr,
+              hdr.ipv4.dst_addr},
+            hdr.ipv4.hdr_checksum,
+            HashAlgorithm.csum16);
+     }
+}
 
-Switch(pipe) main;
+/*************************************************************************
+*************   C H E C K S U M    C O M P U T A T I O N   **************
+*************************************************************************/
+
+control MyComputeChecksum(inout header_t hdr, inout metadata_t meta) {
+     apply {
+	update_checksum(
+	    hdr.ipv4.isValid(),
+            { hdr.ipv4.version,
+	      hdr.ipv4.ihl,
+              hdr.ipv4.diffserv,
+              hdr.ipv4.total_len,
+              hdr.ipv4.identification,
+              hdr.ipv4.flags,
+              hdr.ipv4.frag_offset,
+              hdr.ipv4.ttl,
+              hdr.ipv4.protocol,
+              hdr.ipv4.src_addr,
+              hdr.ipv4.dst_addr },
+            hdr.ipv4.hdr_checksum,
+            HashAlgorithm.csum16);
+
+        update_checksum_with_payload(
+	    hdr.tcp.isValid() && hdr.ipv4.isValid(),
+            { hdr.ipv4.src_addr,
+	      hdr.ipv4.dst_addr,
+              8w0,
+              hdr.ipv4.protocol,
+              meta.tcp_total_len,
+              hdr.tcp.src_port,
+              hdr.tcp.dst_port,
+              hdr.tcp.seq_no,
+              hdr.tcp.ack_no,
+              hdr.tcp.data_offset,
+              hdr.tcp.res,
+              hdr.tcp.flag_cwr,
+              hdr.tcp.flag_ece,
+              hdr.tcp.flag_urg,
+              hdr.tcp.flag_ack,
+              hdr.tcp.flag_psh,
+              hdr.tcp.flag_rst,
+              hdr.tcp.flag_syn,
+              hdr.tcp.flag_fin,
+              hdr.tcp.window,
+              hdr.tcp.urgent_ptr
+              },
+            hdr.tcp.checksum,
+            HashAlgorithm.csum16);
+
+    }
+}
+
+
+V1Switch(
+    SwitchIngressParser(),
+    MyVerifyChecksum(),
+    SwitchIngress(),
+    //  SwitchIngressDeparser(),
+    //  SwitchEgressParser(),
+    SwitchEgress(),
+    MyComputeChecksum(),
+    SwitchEgressDeparser()
+) main;
+
+// Switch(pipe) main;
