@@ -18,11 +18,11 @@ p4c --target bmv2 \
 # Remove any log file written in an earlier run, otherwise
 # simple_switch_grpc will append the new log messages to the end of
 # the existing file.
-/bin/rm -f ss-log.txt
+/bin/rm -f syn-cookie-log.txt
 
 sudo simple_switch_grpc \
      --device-id 1 \
-     --log-file ../implementation/syn-cookie_ss-log \
+     --log-file syn-cookie-log \
      --log-flush \
      --dump-packet-data 10000 \
      -i 1@veth0 \
@@ -45,7 +45,7 @@ sleep 2
 # source /home/tristan/p4dev-python-venv/bin/activate
 echo "Start SYN-Cookie Control Plane application"
 cd ../implementation
-python3 -u controller_grpc.py &> controller.log &
+python3 -u controller_grpc.py &> ../unit-test/controller.log &
 cd ../unit-test
 sleep 2
 # sudo netstat -tulnp

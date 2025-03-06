@@ -11,11 +11,18 @@ class DigestController():
         script_dir = os.path.dirname(__file__)
         topo = load_topo(os.path.join(script_dir, "integration-test/topology.json"))
         nodes = topo.get_nodes()
+        # self.ss = SimpleSwitchP4RuntimeAPI(
+        #     nodes['s1']['device_id'],
+        #     nodes['s1']['grpc_port'],
+        #     p4rt_path=nodes['s1']['p4rt_path'],
+        #     json_path=nodes['s1']['json_path']
+        # )
+        
         self.ss = SimpleSwitchP4RuntimeAPI(
-            nodes['s1']['device_id'],
-            nodes['s1']['grpc_port'],
-            p4rt_path=nodes['s1']['p4rt_path'],
-            json_path=nodes['s1']['json_path']
+            device_id=1,
+            grpc_port=9559,
+            p4rt_path="p4src/proxy.p4info.txtpb",
+            json_path="p4src/proxy.json"
         )
         
         # for the siphash algorithm standard values have to be set in the tb_maybe_sip_init table
