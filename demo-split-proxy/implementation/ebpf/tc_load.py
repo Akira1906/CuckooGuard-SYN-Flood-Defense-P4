@@ -11,6 +11,7 @@ import os
 # Define the namespace switching constant
 CLONE_NEWNET = 0x40000000
 libc = CDLL("libc.so.6")  # Load the C standard library
+script_dir = script_dir = os.path.dirname(os.path.abspath(__file__))
 
 if len(sys.argv) < 3:
     print("Usage:   python3 {} <namespace> <if_name>".format(sys.argv[0]))
@@ -25,7 +26,7 @@ flags = 0
 mode = BPF.SCHED_CLS
 
 # Switch to the specified namespace
-if namespace is not "None":
+if namespace != "None":
     try:
         ns_fd = os.open(f"/var/run/netns/{namespace}", os.O_RDONLY)
         libc.setns(ns_fd, CLONE_NEWNET)
@@ -35,13 +36,15 @@ if namespace is not "None":
         sys.exit(1)
 
 # Load the eBPF program
-with open('egress.c', 'r') as f:
+with open(os.path.join(script_dir, 'egress.c'), 'r') as f:
     bpf_src = f.read()
+
+# print("path::" + os.path.join(script_dir, 'include'))
 
 b = BPF(
     text=bpf_src,
     device=offload_device,
-    cflags=['-Ofast', '-I./include/']
+    cflags=['-Ofast', '-I' + os.path.join(script_dir, 'include')]
 )
 fn = b.load_func("tc_egress", mode, offload_device)
 
@@ -52,9 +55,11 @@ idx = ipdb.interfaces[device].index
 
 # Add clsact qdisc and attach the filter
 ip.tc("add", "clsact", idx)
-ip.tc("add-filter", "bpf", idx, ":1", fd=fn.fd, name=fn.name, parent="ffff:fff3", classid=1, direct_action=True)
+ip.tc("add-filter", "bpf", idx, ":1", fd=fn.fd, name=fn.name,
+      parent="ffff:fff3", classid=1, direct_action=True)
 
-print(f"SmartCookie Server Agent: TC egress program is loaded in namespace '{namespace}', hit CTRL+C to stop.")
+print(
+    f"SmartCookie Server Agent: TC egress program is loaded in namespace '{namespace}', hit CTRL+C to stop.")
 try:
     while True:
         time.sleep(1)

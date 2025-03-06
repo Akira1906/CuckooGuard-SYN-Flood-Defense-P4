@@ -6,3 +6,5 @@ __pycache__
 *.p4i
 *.p4info.txtpb
 proxy.json
+split-proxy.json
+split-proxy-crc.json

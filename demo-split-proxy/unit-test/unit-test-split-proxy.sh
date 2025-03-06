@@ -12,9 +12,9 @@ source ${HOME}/p4dev-python-venv/bin/activate
 # set -x
 p4c --target bmv2 \
     --arch v1model \
-    --p4runtime-files ../implementation/p4src/split-proxy.p4info.txtpb \
-    ../implementation/p4src/split-proxy.p4\
-    -o ../implementation/p4src/
+    --p4runtime-files p4src/split-proxy.p4info.txtpb \
+    p4src/split-proxy.p4\
+    -o p4src/
 
 # Remove any log file written in an earlier run, otherwise
 # simple_switch_grpc will append the new log messages to the end of

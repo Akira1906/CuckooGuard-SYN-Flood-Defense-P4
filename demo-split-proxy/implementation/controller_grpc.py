@@ -52,34 +52,6 @@ class DigestController():
 
 # table_add tb_decide_output_type_2 sip_final_xor_with_time  1 1 12 CALLBACK_TYPE_SYNACK => 
 # table_add tb_decide_output_type_2 verify_timediff  1 1 12 CALLBACK_TYPE_TAGACK => 
-
-
-# NOTE: CRC Version!!!:
-#  const entries = {//all types of packets, from linker_config.json in Lucid
-             
-#              //"event" : "udp_from_server_time"
-#              (0,false,true,   true,    _,_,_,  _, _): drop(); //already saved time delta
-#              //"event" : "iptcp_to_server_syn"
-#              (0,true,false,   false,   1,0,_,  _, _ ): start_crc_calc_synack();
-#              //"event" : "iptcp_to_server_non_syn"
-#              (0,true,false,   false,   0,_,_,  _, false): start_crc_calc_tagack();
-#              (0,true,false,   false,   0,_,_,  _, true): client_to_server_nonsyn_ongoing();
-             
-#              //"event" : "iptcp_from_server_tagged"
-#              (0,true,false,   true,    _,_,1,  _, _): drop(); //already added to bf
-#              //"event" : "iptcp_from_server_non_tagged"
-#              (0,true,false,   true,    _,_,0,  _, _): server_to_client_normal_traffic();
-#              //"event" : "non_tcp_in"
-#              (0,false,true, false,     _,_,_,  _, _): non_tcp_traffic();
-#              (0,false,false, _,     _,_,_,  _, _): non_tcp_traffic();
-             
-#              //round 8->10
-#              (8,true,false,  _,     _,_,_,  CALLBACK_TYPE_TAGACK, _): pre_finalize_tagack(); //round 8->10, tagack needs one last recirc, after 3rd pass (12 round) come back to ingress again for final determination
-#              (8,true,false,  _,     _,_,_,  CALLBACK_TYPE_SYNACK, _): pre_finalize_synack(); //round 8->10, route to client
-#              //round 12, tagack
-#              (12,true,false, _,     _,_,_,  CALLBACK_TYPE_TAGACK, _): finalize_tagack(); //route to server, drop if bad cookie 
-#         }
-
         
         for neigh in topo.get_neighbors('s1'):
             if topo.isHost(neigh):
