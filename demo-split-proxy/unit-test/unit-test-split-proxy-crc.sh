@@ -38,6 +38,7 @@ source ${HOME}/p4dev-python-venv/bin/activate
 sudo ip link add veth0 type veth peer name veth1 || true
 sudo ip link add veth2 type veth peer name veth3 || true
 sudo ip link add veth4 type veth peer name veth5 || true
+sudo ip link add veth6 type veth peer name veth7 || true
 
 # Move veth interfaces into namespaces
 # sudo ip link set veth1 netns net1
@@ -56,13 +57,16 @@ sudo ip link set veth4 up || true
 sudo ip link set veth1 up || true
 sudo ip link set veth3 up || true
 sudo ip link set veth5 up || true
+sudo ip link set veth6 up || true
+sudo ip link set veth7 up || true
 sudo sysctl net.ipv6.conf.veth0.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth1.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth2.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth3.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth4.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth5.disable_ipv6=1
-
+sudo sysctl net.ipv6.conf.veth6.disable_ipv6=1
+sudo sysctl net.ipv6.conf.veth7.disable_ipv6=1
 # sleep 30
 
 
@@ -86,20 +90,22 @@ sudo simple_switch_grpc \
      -i 1@veth0 \
      -i 2@veth2 \
      -i 3@veth4 \
+     -i 68@veth6 \
+     -i 196@veth7 \
      --no-p4 &
 
 echo "Started simple_switch_grpc..."
 
-sudo /bin/python3 ../implementation/ebpf/xdp_load.py None veth1 &
+sudo /bin/python3 ../implementation/ebpf/xdp_load.py None veth5 &
 # XDP_PID=$!
 
 # unload loaded TC programs
-sudo tc qdisc del dev veth1 clsact 2>/dev/null || true
+sudo tc qdisc del dev veth5 clsact 2>/dev/null || true
 
-sudo /bin/python3 ../implementation/ebpf/tc_load.py None veth1 &
+sudo /bin/python3 ../implementation/ebpf/tc_load.py None veth5 &
 # TC_PID=$!
 
-echo "Attached eBPF program to the servers interface (veth1)"
+echo "Attached eBPF program to the servers interface (veth5)"
 
 echo "Waiting 2 seconds before starting PTF test ..."
 sleep 2
@@ -112,18 +118,18 @@ sleep 2
 # source /home/tristan/p4dev-python-venv/bin/activate
 echo "Start SYN-Cookie Control Plane application"
 cd ../implementation
-python3 -u controller_grpc_crc.py &> ../unit-test/controller.log &
+python3 -u controller_grpc_crc.py &> ../unit-test/controller-crc.log &
 cd ../unit-test
 
 sleep 1
 
-# sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
-#     --pypath "$P" \
-#     -i 1@veth1 \
-#     -i 2@veth3 \
-#     -i 3@veth5 \
-#     --test-params="grpcaddr='localhost:9559';p4info='../implementation/p4src/split-proxy.p4info.txtpb';config='../implementation/p4src/split-proxy.json'" \
-#     --test-dir ptf
+sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
+    --pypath "$P" \
+    -i 1@veth1 \
+    -i 2@veth3 \
+    -i 3@veth5 \
+    --test-params="grpcaddr='localhost:9559';p4info='../implementation/p4src/split-proxy-crc.p4info.txtpb';config='../implementation/p4src/split-proxy-crc.json'" \
+    --test-dir ptf
 
 echo "PTF test finished.  Waiting 2 seconds before cleanup"
 sleep 2

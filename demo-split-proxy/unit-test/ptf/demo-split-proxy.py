@@ -94,16 +94,16 @@ class DemoTumTest(BaseTest):
 class UnitTest(DemoTumTest):
 
     def runTest(self):
-        self.client_mac = "00:00:0a:00:01:01"  # h1 MAC
-        self.attacker_mac = "00:00:0a:00:01:02"  # h2 MAC
-        self.server_mac = "00:00:0a:00:01:03"  # h3 MAC
+        self.client_mac = "00:00:00:00:00:01"  # h1 MAC
+        self.attacker_mac = "00:00:00:00:00:02"  # h2 MAC
+        self.server_mac = "00:00:00:00:00:03"  # h3 MAC
         self.switch_client_mac = "00:01:0a:00:01:01"  # s1 client MAC
-        self.switch_attacker_mac = "00:01:0a:00:01:02"# s1 attacker MAC
-        self.switch_server_mac = "00:01:0a:00:01:03" # s1 server MAC
+        self.switch_attacker_mac = "00:01:0a:00:01:01"# s1 attacker MAC
+        self.switch_server_mac = "00:01:0a:00:01:01" # s1 server MAC
 
         self.client_ip = "10.0.1.1"
         self.attacker_ip = "10.0.1.2"
-        self.server_ip = "10.0.1.3"
+        self.server_ip = "12.0.0.3"
 
         self.client_port = 1234
         self.server_port = 81
@@ -138,8 +138,8 @@ class UnitTest(DemoTumTest):
         # where the src and dst mac were reversed one time to much
         exp_pkt = ( 
             Ether(dst=self.client_mac, src=self.switch_client_mac, type=0x0800) /
-            IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, seq=2030043157, ack=1, flags="SA", window=8192)
+            IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=self.server_port, dport=self.client_port, seq=7063, ack=1, flags="SA", window=8192)
         )
 
         # pkt_mask = get_packet_mask(exp_pkt)
@@ -149,9 +149,9 @@ class UnitTest(DemoTumTest):
         # Step 3: Correct ACK answer from the client
         
         ack_pkt = (
-            Ether(dst=self.client_mac, src=self.switch_client_mac, type=0x0800) /
+            Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=2030043158, window=8192)
+            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=7064, window=8192)
         )
         
         tu.send_packet(self, self.client_iface, ack_pkt)
@@ -162,7 +162,7 @@ class UnitTest(DemoTumTest):
         
         syn_pkt = (
             Ether(dst=self.server_mac, src=self.client_mac, type=0x0800) /
-            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
             TCP(sport=self.client_port, dport=self.server_port, flags="S")
         )
         
@@ -182,7 +182,7 @@ class UnitTest(DemoTumTest):
         
         ack_pkt = ( # dst=self.client_mac, but I think there is a bug in the P4 program
             Ether(dst=self.server_mac, src=self.server_mac, type=0x0800) /
-            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
             TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=38, window=8192)
         )
         
@@ -206,7 +206,7 @@ class UnitTest(DemoTumTest):
 
         ack_pkt = (
             Ether(dst=self.server_mac, src=self.switch_client_mac, type=0x0800) /
-            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
             TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=38) /
             Raw(load=b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n")
         )
@@ -228,7 +228,7 @@ class UnitTest(DemoTumTest):
         
         resp_pkt = (
             Ether(dst=self.client_mac, src=self.switch_server_mac, type=0x0800) /
-            IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
+            IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
             TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=2030043158, ack=1) /
             Raw(load=b"HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!")
         )

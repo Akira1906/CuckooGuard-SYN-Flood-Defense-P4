@@ -54,10 +54,10 @@ class DigestController():
         self.ss.table_add("tb_decide_output_type_1", "clean_up",
                           ["1", "1", "12", "0&&&0"], [], prio=10)
 
-        self.ss.table_add("tb_decide_output_type_2", "sip_final_xor_with_time",
-                          ["1", "1", "12", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
-        self.ss.table_add("tb_decide_output_type_2", "verify_timediff",
-                          ["1", "1", "12", str(CALLBACK_TYPE_TAGACK)], [], prio=10)
+        # self.ss.table_add("tb_decide_output_type_2", "sip_final_xor_with_time",
+        #                   ["1", "1", "12", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
+        # self.ss.table_add("tb_decide_output_type_2", "verify_timediff",
+        #                   ["1", "1", "12", str(CALLBACK_TYPE_TAGACK)], [], prio=10)
 
         print("Table entries configured successfully!")
 

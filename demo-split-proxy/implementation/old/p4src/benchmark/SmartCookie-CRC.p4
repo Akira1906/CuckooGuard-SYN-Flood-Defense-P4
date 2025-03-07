@@ -398,7 +398,7 @@ control SwitchIngress(
     action route_to(bit<9> port){
         ig_intr_tm_md.ucast_egress_port=port;
     hdr.ethernet.src_addr=1; 
-    hdr.ethernet.dst_addr=(bit<48>) port; 
+    hdr.ethernet.dst_addr=(bit<48>) port;
     }
     action reflect(){
         //send you back to where you're from
