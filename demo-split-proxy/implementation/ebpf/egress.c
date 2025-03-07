@@ -17,14 +17,16 @@
 */
 
 #define PIN_GLOBAL_NS 2 
-//#define IFINDEX 2 
+
+#ifndef IFINDEX
 #define IFINDEX 8
+#endif
 #define TS_UDP_PORT 5555
 #define IP_CSUM_OFF offsetof(struct iphdr, check) 
 #define IP_TOTLEN_OFF offsetof(struct iphdr, tot_len) 
 
 #ifndef DEBUG
-#define DEBUG 0 
+#define DEBUG 0
 #endif
 
 #include <linux/in.h>

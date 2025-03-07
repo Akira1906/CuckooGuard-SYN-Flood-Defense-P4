@@ -8,6 +8,7 @@ cleanup() {
     sudo pkill -f controller_grpc_crc.py || true
     sudo pkill -f tc_load.py || true
     sudo pkill -f xdp_load.py || true
+    sudo pkill -f /sys/kernel/tracing/trace_pipe || true
 }
 
 trap cleanup EXIT
@@ -32,7 +33,6 @@ source ${HOME}/p4dev-python-venv/bin/activate
 # Recreate namespaces
 # sudo ip netns add net1
 # sudo ip netns add net2
-
 
 # Create veth pairs correctly
 sudo ip link add veth0 type veth peer name veth1 || true
@@ -67,8 +67,6 @@ sudo sysctl net.ipv6.conf.veth4.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth5.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth6.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth7.disable_ipv6=1
-# sleep 30
-
 
 
 # Compile P4 Program
@@ -96,32 +94,48 @@ sudo simple_switch_grpc \
 
 echo "Started simple_switch_grpc..."
 
-sudo /bin/python3 ../implementation/ebpf/xdp_load.py None veth5 &
-# XDP_PID=$!
+BPFIFACE="veth5"
 
-# unload loaded TC programs
-sudo tc qdisc del dev veth5 clsact 2>/dev/null || true
+echo "Unloading any existing eBPF programs on $BPFIFACE..."
 
-sudo /bin/python3 ../implementation/ebpf/tc_load.py None veth5 &
-# TC_PID=$!
+# Ensure any previously attached XDP program is removed
+sudo ip link set dev "$BPFIFACE" xdp off 2>/dev/null || true
+# Delete the existing BPF Map if it exists
+sudo rm -rf /sys/fs/bpf/my_nonpercpu_map
+# Ensure any previously attached TC programs are removed
+sudo tc qdisc del dev "$BPFIFACE" clsact 2>/dev/null || true
 
-echo "Attached eBPF program to the servers interface (veth5)"
 
-echo "Waiting 2 seconds before starting PTF test ..."
-sleep 2
+echo "Loading new TC program on $BPFIFACE..."
+sudo /bin/python3 ../implementation/ebpf/tc_load.py None "$BPFIFACE" &
 
-# Note that the mapping between switch port number and Linux interface
-# names is best to make it correspond with those given when starting
-# the simple_switch_grpc process.  The `ptf` process has no other way
-# of getting this mapping other than by telling it on its command
-# line.
-# source /home/tristan/p4dev-python-venv/bin/activate
+# Wait a moment to ensure TC is properly attached
+sleep 1
+
+echo "Loading new XDP program on $BPFIFACE..."
+sudo /bin/python3 ../implementation/ebpf/xdp_load.py None "$BPFIFACE" &
+
+# Wait a moment to ensure XDP is properly attached
+sleep 1
+
+# Start logging eBPF trace_pipe output to file
+sudo cat /sys/kernel/tracing/trace_pipe >> "ebpf-crc.log" 2>/dev/null &
+
+echo "Attached eBPF programs to the server's interface ($BPFIFACE)"
+
+
 echo "Start SYN-Cookie Control Plane application"
 cd ../implementation
 python3 -u controller_grpc_crc.py &> ../unit-test/controller-crc.log &
 cd ../unit-test
 
 sleep 1
+
+# Note that the mapping between switch port number and Linux interface
+# names is best to make it correspond with those given when starting
+# the simple_switch_grpc process.  The `ptf` process has no other way
+# of getting this mapping other than by telling it on its command
+# line.
 
 sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
     --pypath "$P" \

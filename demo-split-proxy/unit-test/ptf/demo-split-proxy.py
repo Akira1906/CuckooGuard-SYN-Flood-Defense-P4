@@ -127,7 +127,7 @@ class UnitTest(DemoTumTest):
         syn_pkt = (
             Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="S")
+            TCP(sport=self.client_port, dport=self.server_port, seq=0, flags="S")
         )
         
         tu.send_packet(self, self.client_iface, syn_pkt)
@@ -156,34 +156,34 @@ class UnitTest(DemoTumTest):
         
         tu.send_packet(self, self.client_iface, ack_pkt)
         
-        # Step 4: Handshake between Switch and Server
+        # Step 4: Handshake between eBPF Server Agent and Server
         
-        # 4.1: Proxy - Server SYN
+        # 4.1: Server Agent - Server SYN
         
         syn_pkt = (
-            Ether(dst=self.server_mac, src=self.client_mac, type=0x0800) /
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
             TCP(sport=self.client_port, dport=self.server_port, flags="S")
         )
         
         tu.verify_packet(self, syn_pkt, self.server_iface)
         
-        # 4.2: Server - Proxy SYN-ACK
+        # 4.2: Server - Server Agent SYN-ACK
         
         syn_ack_pkt = (
-            Ether(dst=self.client_mac, src=self.server_mac, type=0x0800) /
+            Ether(dst=self.switch_server_mac, src=self.server_mac, type=0x0800) /
             IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
             TCP(sport=self.server_port, dport=self.client_port, flags="SA", seq=37, ack=1, window=8192)
         )
         
         tu.send_packet(self, self.server_iface, syn_ack_pkt)
         
-        # 4.2: Proxy - Server ACK
+        # 4.2: Server Agent - Server ACK
         
         ack_pkt = ( # dst=self.client_mac, but I think there is a bug in the P4 program
-            Ether(dst=self.server_mac, src=self.server_mac, type=0x0800) /
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=38, window=8192)
+            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=38, window=502)
         )
         
         tu.verify_packet(self, ack_pkt, self.server_iface)

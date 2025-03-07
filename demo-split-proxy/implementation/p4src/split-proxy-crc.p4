@@ -1,35 +1,16 @@
-/*
-    SmartCookie: Blocking Large-Scale SYN Floods with a Split-Proxy Defense on Programmable Data Planes
-    
-    Copyright (C) 2023 Sophia Yoo, Xiaoqi Chen, Princeton University
-    sy6 [at] princeton.edu
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #include <core.p4>
 #include <v1model.p4>
 
-// Testbed parameters
-const bit<9> SERVER_PORT=3; 
-const bit<32> SERVER_IP=0x0c000003;//12.0.0.3
-
-
 typedef bit<48> mac_addr_t;
-const mac_addr_t SERVER_MAC = 0x00010A000101;//00:01:0a:00:01:01
 typedef bit<32> ipv4_addr_t;
 typedef bit<16> ether_type_t;
 const ether_type_t ETHERTYPE_IPV4 = 16w0x0800;
 const ether_type_t ETHERTYPE_SIPH_INTM = 16w0xff00;
+
+// Testbed parameters
+const bit<9> SERVER_PORT=3; 
+const bit<32> SERVER_IP=0x0c000003;//12.0.0.3
+const mac_addr_t SERVER_MAC = 0x00010A000101;//00:01:0a:00:01:01
 
 typedef bit<8> ip_protocol_t;
 const ip_protocol_t IP_PROTOCOLS_ICMP = 1;
@@ -41,17 +22,9 @@ const bit<16> PORT_TIMEDELTA_UPDATE = 5555; //for time delta
 const bit<4> CALLBACK_TYPE_SYNACK=1;
 const bit<4> CALLBACK_TYPE_TAGACK=2; 
 
-//siphash-related consts
-#define DEFAULT_SIP_KEY_0 0x33323130
-#define DEFAULT_SIP_KEY_1 0x42413938
 // moved this here from SwitchIngress
-// use timestamp values that are actually available in bmv2 instead
 #define TIMESTAMP_NOW_TICK_16 ((bit<32>) standard_metadata.ingress_global_timestamp[47:16])
 
-const bit<32> const_0 = 0x70736575;
-const bit<32> const_1 = 0x6e646f6d;
-const bit<32> const_2 = 0x6e657261;
-const bit<32> const_3 = 0x79746573;
 
 struct paired_32bit {
     bit<32> lo;
@@ -73,7 +46,7 @@ header sip_meta_h {
     bit<4> __padding1;
     bit<4> callback_type;
     bit<7> __padding2;
-    bit<9> egr_port; // This will be mapped to standard_metadata.egress_spec
+    bit<9> egr_port;
     bit<32> cookie_time;
     bit<32> ack_verify_timediff;
 }
@@ -247,21 +220,28 @@ parser SwitchIngressParser(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Egress Deparser
-// ---------------------------------------------------------------------------
-control SwitchEgressDeparser(
-        packet_out pkt,
-        in header_t hdr) {
-    
+/*************************************************************************
+************   C H E C K S U M    V E R I F I C A T I O N   *************
+*************************************************************************/
+
+control MyVerifyChecksum(inout header_t hdr, inout metadata_t meta) {
     apply {
-        // Emit headers
-        pkt.emit(hdr.ethernet);
-        pkt.emit(hdr.sip_meta);
-        pkt.emit(hdr.ipv4);
-        pkt.emit(hdr.tcp);
-        pkt.emit(hdr.udp);
-    }
+     verify_checksum(
+	    hdr.ipv4.isValid(),
+            { hdr.ipv4.version,
+	      hdr.ipv4.ihl,
+              hdr.ipv4.diffserv,
+              hdr.ipv4.total_len,
+              hdr.ipv4.identification,
+              hdr.ipv4.flags,
+              hdr.ipv4.frag_offset,
+              hdr.ipv4.ttl,
+              hdr.ipv4.protocol,
+              hdr.ipv4.src_addr,
+              hdr.ipv4.dst_addr},
+            hdr.ipv4.hdr_checksum,
+            HashAlgorithm.csum16);
+     }
 }
 
 
@@ -274,7 +254,6 @@ control SwitchIngress(
         inout standard_metadata_t standard_metadata) {
         
     action bypass_egress(){
-        // standard_metadata.egress_spec = 511; // BMv2 uses 511 as a drop port
         meta.bypass_egress = 1;
         // TODO: we do not really use this fuction what is even the functionality in the original implementation?
     }
@@ -448,23 +427,27 @@ control SwitchIngress(
     }
 
     action start_crc_calc_tagack() {
+        hdr.ethernet.ether_type=ETHERTYPE_SIPH_INTM; // added to correctly recirculate packets
         hdr.sip_meta.setValid(); // added to fix behaviour
         meta.sip_meta_valid = 1;
         hdr.sip_meta.callback_type = CALLBACK_TYPE_TAGACK;
         hdr.sip_meta.egr_port = SERVER_PORT; 
+        bit<32> seq_no_minusone = hdr.tcp.seq_no - 1; // fixed the sequence number expectation
 
         // Compute CRC32 hash and store in metadata
         hash(meta.cookie_hash, HashAlgorithm.crc32, (bit<32>) 0, 
-            { hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port, hdr.tcp.seq_no }, 
+            { hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port, seq_no_minusone }, 
             (bit<32>) 65535);
     }
 
     action pre_finalize_synack(){
+        // this was all integrated into start_crc_calc_synack
         // hdr.sip_meta.round=10;
         // route_to(hdr.sip_meta.egr_port);
         // dont_bypass_egress();
         // // dont_drop();
     }
+
     action pre_finalize_tagack(){
         hdr.sip_meta.round=10;
         // resubmit();
@@ -483,6 +466,7 @@ control SwitchIngress(
 
         if (meta.ack_verify_timediff_exceeded_limit == 1) {
             mark_to_drop(standard_metadata);
+            // TODO: right now the timediff seems to be off
         }
         // not sure if this should be here or the the dropping happens in craft_onward_ack()
         craft_onward_ack();
@@ -717,26 +701,6 @@ control SwitchEgress(
         //     (true, true, 12, _): clean_up();
         // }
     }
-    
-    // table tb_decide_output_type_2 {
-    //     key = {
-    //         meta.sip_meta_valid: exact;
-    //         meta.tcp_valid: exact;
-    //         hdr.sip_meta.round: exact;
-    //         hdr.sip_meta.callback_type: ternary;
-    //     }
-    //     actions = {
-    //         sip_final_xor_with_time;
-    //         verify_timediff;
-    //         nop;
-    //     }
-    //     default_action = nop;
-    //     size = 16;
-    //     // const entries={
-    //     //     (true, true, 12, CALLBACK_TYPE_SYNACK): sip_final_xor_with_time();//need second stage to not have two hash copies in one action 
-    //     //     (true, true, 12, CALLBACK_TYPE_TAGACK): verify_timediff(); //need second stage to complete case for CALLBACK_TYPE_TAGACK 
-    //     // }
-    // }
 
     apply {
         if(meta.bypass_egress == 0){
@@ -753,7 +717,6 @@ control SwitchEgress(
                 hdr.sip_meta.round = 12;
 
                 tb_decide_output_type_1.apply(); 	 
-                // tb_decide_output_type_2.apply(); 
             }//endif round!=99
             else{ //round==99, here from ingress to perform checksum update in deparser  
             //don't do any further modification of packet 
@@ -773,29 +736,6 @@ control SwitchEgress(
     }//apply
 }
 
-/*************************************************************************
-************   C H E C K S U M    V E R I F I C A T I O N   *************
-*************************************************************************/
-
-control MyVerifyChecksum(inout header_t hdr, inout metadata_t meta) {
-    apply {
-     verify_checksum(
-	    hdr.ipv4.isValid(),
-            { hdr.ipv4.version,
-	      hdr.ipv4.ihl,
-              hdr.ipv4.diffserv,
-              hdr.ipv4.total_len,
-              hdr.ipv4.identification,
-              hdr.ipv4.flags,
-              hdr.ipv4.frag_offset,
-              hdr.ipv4.ttl,
-              hdr.ipv4.protocol,
-              hdr.ipv4.src_addr,
-              hdr.ipv4.dst_addr},
-            hdr.ipv4.hdr_checksum,
-            HashAlgorithm.csum16);
-     }
-}
 
 /*************************************************************************
 *************   C H E C K S U M    C O M P U T A T I O N   **************
@@ -846,6 +786,23 @@ control MyComputeChecksum(inout header_t hdr, inout metadata_t meta) {
             hdr.tcp.checksum,
             HashAlgorithm.csum16);
 
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Egress Deparser
+// ---------------------------------------------------------------------------
+control SwitchEgressDeparser(
+        packet_out pkt,
+        in header_t hdr) {
+    
+    apply {
+        // Emit headers
+        pkt.emit(hdr.ethernet);
+        pkt.emit(hdr.sip_meta);
+        pkt.emit(hdr.ipv4);
+        pkt.emit(hdr.tcp);
+        pkt.emit(hdr.udp);
     }
 }
 

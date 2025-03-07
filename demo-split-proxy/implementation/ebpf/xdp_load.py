@@ -6,6 +6,9 @@ import sys
 from bcc import BPF  # this needs apt install python3-bpfcc and then use system wide python3
 from ctypes import CDLL
 
+# CONSTANT TO PASS TO THE BPF program
+DEBUG_MODE = 1
+
 CLONE_NEWNET = 0x40000000
 libc = CDLL("libc.so.6")
 script_dir = script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +35,8 @@ mode = BPF.XDP
 with open(os.path.join(script_dir, 'ingress.c'), 'r') as f:
     bpf_src = f.read()
 
-b = BPF(text=bpf_src, cflags=['-Ofast', '-I' + os.path.join(script_dir, 'include')])
+b = BPF(text=bpf_src, cflags=[
+        '-Ofast', '-I' + os.path.join(script_dir, 'include'), f'-DDEBUG={DEBUG_MODE}'])
 fn = b.load_func("xdp_ingress", mode)
 b.attach_xdp(device, fn, flags)
 

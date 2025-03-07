@@ -31,9 +31,9 @@
 #define COOKIE_PERIOD 4096
 #define MAX_COOKIE_AGE 3 
 
-
+// enabled debugging
 #ifndef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #endif
 
 
