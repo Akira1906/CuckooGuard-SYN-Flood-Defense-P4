@@ -183,6 +183,7 @@ int xdp_ingress(struct xdp_md *ctx) {
         bpf_trace_printk("SYN flag 0x%x", tcp->syn);
         bpf_trace_printk("ACK flag 0x%x", tcp->ack);
         bpf_trace_printk("ECE flag 0x%x", tcp->ece);
+		bpf_trace_printk("TCP CHECKSUM 0x%x", tcp->check);
         /*bpf_trace_printk("doff flag 0x%x", tcp->doff);
         bpf_trace_printk("res1 flag 0x%x", tcp->res1);
         bpf_trace_printk("cwr flag 0x%x", tcp->cwr);
@@ -248,7 +249,6 @@ int xdp_ingress(struct xdp_md *ctx) {
        		         tcp->check = compute_incr_tcp_checksum(tcp->check,(uint16_t)(old_ack_seq_n&0xFFFF), (uint16_t)(tcp->ack_seq&0xFFFF));
                 	//upper 16 bits 
                 	tcp->check = compute_incr_tcp_checksum(tcp->check,(uint16_t)((old_ack_seq_n>>16)&0xFFFF), (uint16_t)((tcp->ack_seq>>16)&0xFFFF));
-		
 			//incremental checksum update on changed flags 
                       uint16_t* casted_ptr=(uint16_t*) tcp;
                       uint16_t old_flags_n = casted_ptr[6];
@@ -295,7 +295,7 @@ int xdp_ingress(struct xdp_md *ctx) {
        		tcp->check = compute_incr_tcp_checksum(tcp->check,(uint16_t)(old_ack_seq_n&0xFFFF), (uint16_t)(tcp->ack_seq&0xFFFF));
                 //upper 16 bits 
                 tcp->check = compute_incr_tcp_checksum(tcp->check,(uint16_t)((old_ack_seq_n>>16)&0xFFFF), (uint16_t)((tcp->ack_seq>>16)&0xFFFF));
-		
+		if(DEBUG)bpf_trace_printk("XDP_INGRESS: updated TCP checksum: 0x%x", ntohs(tcp->check)); 
 	}//end if delta update 
 
 	//might not need this switch statement 

@@ -144,7 +144,8 @@ struct metadata_t {
     bit<1> flag_ack;
     bit<1> flag_syn;
     
-    bit<16> tcp_total_len;//always 20
+    bit<16> tcp_total_len;//always 20 - why???
+    bit<16> tcp_len;
     bit<1> redo_checksum;
 
     // Egress
@@ -371,13 +372,14 @@ control SwitchIngress(
     
     // packet in-out related
 
-    action naive_routing(){
-        standard_metadata.egress_spec = (bit<9>) hdr.ipv4.dst_addr[31:24];
+    action naive_routing(){ // this is bullshit
+        standard_metadata.egress_spec = (bit<9>) hdr.ipv4.dst_addr[7:0];
+        
         // hdr.ethernet.src_addr=1; this is changed
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-        hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
-        hdr.ethernet.dst_addr[47:8] = 0; 
-        hdr.ethernet.dst_addr[7:0] = hdr.ipv4.dst_addr[31:24];
+        hdr.ethernet.src_addr = SERVER_MAC;
+        hdr.ethernet.dst_addr[47:8] = 0;
+        hdr.ethernet.dst_addr[7:0] = hdr.ipv4.dst_addr[7:0];
     }
     
     action craft_onward_ack(){
@@ -702,7 +704,18 @@ control SwitchEgress(
         // }
     }
 
+    action compute_tcp_length(){
+        bit<16> tcpLength;
+        bit<16> ipv4HeaderLength = ((bit<16>) hdr.ipv4.ihl) * 4;
+        //this gives the size of IPv4 header in bytes, since ihl value represents
+        //the number of 32-bit words including the options field
+        tcpLength = hdr.ipv4.total_len - ipv4HeaderLength;
+        // save this value to metadata to be used later in checksum computation
+        meta.tcp_len = tcpLength;
+    }
+
     apply {
+        compute_tcp_length();
         if(meta.bypass_egress == 0){
 
             if(hdr.sip_meta.round != 99){
@@ -765,7 +778,7 @@ control MyComputeChecksum(inout header_t hdr, inout metadata_t meta) {
 	      hdr.ipv4.dst_addr,
               8w0,
               hdr.ipv4.protocol,
-              meta.tcp_total_len,
+              meta.tcp_len,
               hdr.tcp.src_port,
               hdr.tcp.dst_port,
               hdr.tcp.seq_no,

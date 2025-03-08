@@ -79,6 +79,7 @@ p4c --target bmv2 \
 # Remove old log file
 
 /bin/rm -f split-proxy-crc-log.txt
+/bin/rm -f ebpf-crc.log
 
 sudo simple_switch_grpc \
      --device-id 1 \
@@ -142,6 +143,7 @@ sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
     -i 1@veth1 \
     -i 2@veth3 \
     -i 3@veth5 \
+    -i 4@veth4 \
     --test-params="grpcaddr='localhost:9559';p4info='../implementation/p4src/split-proxy-crc.p4info.txtpb';config='../implementation/p4src/split-proxy-crc.json'" \
     --test-dir ptf
 

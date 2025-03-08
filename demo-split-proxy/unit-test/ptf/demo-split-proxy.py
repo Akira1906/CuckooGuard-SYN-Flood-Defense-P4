@@ -112,6 +112,7 @@ class UnitTest(DemoTumTest):
         self.client_iface = 1  # h1 -> s1
         self.attacker_iface = 2  # h2 -> s1
         self.server_iface = 3  # h3 -> s1
+        self.ebpf_iface = 4
         
         self.tcp_handshake()
         self.valid_packet_sequence()
@@ -134,8 +135,6 @@ class UnitTest(DemoTumTest):
         
         # Step 2: P4 program answers SYN-ACK (Proxy -> Client)
 
-        # NOTE: I fixed this by changing line 276 in the p4 program,
-        # where the src and dst mac were reversed one time to much
         exp_pkt = ( 
             Ether(dst=self.client_mac, src=self.switch_client_mac, type=0x0800) /
             IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
@@ -156,6 +155,17 @@ class UnitTest(DemoTumTest):
         
         tu.send_packet(self, self.client_iface, ack_pkt)
         
+        
+        # verify packet going from P4 to ebpf
+        
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=self.client_port, dport=self.server_port, flags="AE", seq=0, ack=7064, window=8192)
+        )
+        
+        tu.verify_packet(self, ack_pkt, self.ebpf_iface,)
+        
         # Step 4: Handshake between eBPF Server Agent and Server
         
         # 4.1: Server Agent - Server SYN
@@ -168,6 +178,7 @@ class UnitTest(DemoTumTest):
         
         tu.verify_packet(self, syn_pkt, self.server_iface)
         
+    
         # 4.2: Server - Server Agent SYN-ACK
         
         syn_ack_pkt = (
@@ -187,28 +198,41 @@ class UnitTest(DemoTumTest):
         )
         
         tu.verify_packet(self, ack_pkt, self.server_iface)
+        
+        # verify the packet from ebpf to P4 signaling to add the connection to the Bloomfilter
+        
+        ack_pkt = ( # dst=self.client_mac, but I think there is a bug in the P4 program
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=self.client_port, dport=self.server_port, flags="E", seq=1, ack=38, window=502)
+        )
+        
+        tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+        
+    
     
     def valid_packet_sequence(self):
         """ Sends a short series of valid packets from the client """
         print("\n[INFO] Sending Valid Data Packets from Client...")
 
         # Step 1.1: HTTP GET (Client -> Proxy)
+        tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
+        get_len = len(tcp_load)
         ack_pkt = (
             Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=2030043158) /
-            Raw(load=b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n")
+            TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=7064) /
+            Raw(load=tcp_load)
         )
-        
         tu.send_packet(self, self.client_iface, ack_pkt)
         
         # Step 1.2: HTTP GET (Proxy -> Server)
 
-        ack_pkt = (
+        ack_pkt = ( # I had to manually set the checksum, somehow they were different in scapy compared to actual
             Ether(dst=self.server_mac, src=self.switch_client_mac, type=0x0800) /
-            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0, ihl=5, len=84) /
             TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=38) /
-            Raw(load=b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n")
+            Raw(load=tcp_load)
         )
         
         tu.verify_packet(self, ack_pkt, self.server_iface)
@@ -218,7 +242,7 @@ class UnitTest(DemoTumTest):
         resp_pkt = (
             Ether(dst=self.switch_server_mac, src=self.server_mac, type=0x0800) /
             IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=38, ack=1) /
+            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=38, ack=1+get_len) /
             Raw(load=b"HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!")
         )
         
@@ -228,12 +252,13 @@ class UnitTest(DemoTumTest):
         
         resp_pkt = (
             Ether(dst=self.client_mac, src=self.switch_server_mac, type=0x0800) /
-            IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=2030043158, ack=1) /
+            IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=7064, ack=1+get_len) /
             Raw(load=b"HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!")
         )
         
         tu.verify_packet(self, resp_pkt, self.client_iface)
+        
 
     def malicious_packets(self):
         """ Sends malicious packets from the attacker to the web server """
@@ -249,7 +274,6 @@ class UnitTest(DemoTumTest):
             # used to verify that the packet cannot bypass the proxy
             tu.verify_no_packet(self, syn_flood_pkt, 3)
 
-        # Spoofed TCP packets
         for i in range(3):
             spoofed_pkt = (
                 Ether(dst=self.switch_attacker_mac, src=self.attacker_mac, type=0x0800) /
