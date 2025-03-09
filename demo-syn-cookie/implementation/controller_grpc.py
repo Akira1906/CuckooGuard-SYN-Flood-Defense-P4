@@ -8,6 +8,10 @@ import argparse
 class DigestController():
 
     def __init__(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        p4rt_path = os.path.join(script_dir, "p4src/proxy_p4rt.txt")
+        json_path = "p4src/proxy.json"
+        json_path = os.path.join(script_dir, json_path)
         script_dir = os.path.dirname(__file__)
         topo = load_topo(os.path.join(script_dir, "../integration-test/topology.json"))
         nodes = topo.get_nodes()
@@ -21,8 +25,8 @@ class DigestController():
         self.ss = SimpleSwitchP4RuntimeAPI(
             device_id=1,
             grpc_port=9559,
-            p4rt_path="p4src/proxy.p4info.txtpb",
-            json_path="p4src/proxy.json"
+            p4rt_path=p4rt_path,
+            json_path=json_path
         )
 
         

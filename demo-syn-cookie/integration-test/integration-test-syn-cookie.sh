@@ -10,10 +10,10 @@ P="$HOME/p4dev-python-venv/bin/python"
 
 
 echo "Start SYN-Cookie Control Plane application"
-python3 -u ../controller_grpc.py --delay 5 &> controller.log &
+python3 -u ../implementation/controller_grpc.py --delay 5 &> controller.log &
 
 echo "Setup Mininet"
-sudo ${$HOME}/p4dev-python-venv/bin/python setup_mininet.py
+sudo "$HOME/p4dev-python-venv/bin/python" setup_mininet.py
 
 
 echo "Killing Scripts"

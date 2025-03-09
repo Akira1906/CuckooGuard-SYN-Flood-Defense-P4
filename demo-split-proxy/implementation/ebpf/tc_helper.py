@@ -9,6 +9,6 @@ def get_ifindex(interface_name):
     result = fcntl.ioctl(sock.fileno(), SIOCGIFINDEX, ifreq)
     return struct.unpack('i', result[16:20])[0]  # Extract index
 
-# Example usage:
-if_index = get_ifindex("veth0")
-print(f"Interface Index of veth1: {if_index}")
+# # Example usage:
+# if_index = get_ifindex("veth0")
+# print(f"Interface Index of veth1: {if_index}")

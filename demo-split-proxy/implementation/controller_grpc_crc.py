@@ -7,12 +7,20 @@ import argparse
 
 class DigestController():
 
-    def __init__(self):
+    def __init__(self, p4rt_path="p4src/split-proxy-crc.p4info.txtpb"):
+
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        p4rt_path = os.path.join(script_dir, "p4src/split-proxy-crc_p4rt.txt")
+        json_path = "p4src/split-proxy-crc.json"
+        json_path = os.path.join(script_dir, json_path)
+
+        # print(f"p4rt_path : {p4rt_path}")
+        # print(f"script_dir: {script_dir}")
         self.ss = SimpleSwitchP4RuntimeAPI(
             device_id=1,
             grpc_port=9559,
-            p4rt_path="p4src/split-proxy-crc.p4info.txtpb",
-            json_path="p4src/split-proxy-crc.json"
+            p4rt_path=p4rt_path,
+            json_path=json_path
         )
 
         self.configure_tables()
@@ -61,6 +69,7 @@ class DigestController():
 
         print("Table entries configured successfully!")
 
+
 def main():
 
     # Create the parser
@@ -70,6 +79,8 @@ def main():
     # Add arguments
     parser.add_argument('--delay', type=int, required=False,
                         help='Delay before starting the application in seconds')
+    parser.add_argument('--p4rt', type=str, required=False,
+                        help='Set P4 Runtime filepath manually')
 
     # Parse the arguments
     args = parser.parse_args()
@@ -78,8 +89,11 @@ def main():
     delay = args.delay
     if delay:
         sleep(delay)
-
-    DigestController()
+    p4rt_path = args.p4rt
+    if p4rt_path:
+        DigestController(p4rt_path)
+    else:
+        DigestController()
 
 
 if __name__ == "__main__":

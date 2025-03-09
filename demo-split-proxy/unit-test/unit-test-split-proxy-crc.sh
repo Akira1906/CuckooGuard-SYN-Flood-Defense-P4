@@ -6,9 +6,13 @@ set -x # Debugging output
 cleanup() {
     sudo pkill --f simple_switch_grpc || true
     sudo pkill -f controller_grpc_crc.py || true
-    sudo pkill -f tc_load.py || true
-    sudo pkill -f xdp_load.py || true
+    sudo pkill -2 -f tc_load.py || true
+    sudo pkill -2 -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
+    # sudo ip link del veth0 || true
+    # sudo ip link del veth2 || true
+    # sudo ip link del veth4 || true
+    # sudo ip link del veth6 || true
 }
 
 trap cleanup EXIT

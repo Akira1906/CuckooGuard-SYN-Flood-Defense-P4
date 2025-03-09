@@ -1,0 +1,368 @@
+# proto-file: p4/config/v1/p4info.proto
+# proto-message: p4.config.v1.P4Info
+
+pkg_info {
+  arch: "v1model"
+}
+tables {
+  preamble {
+    id: 49024599
+    name: "SwitchIngress.tb_triage_pkt_types_nextstep"
+    alias: "tb_triage_pkt_types_nextstep"
+    annotations: "@stage(11)"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.sip_meta.round"
+    bitwidth: 8
+    match_type: EXACT
+  }
+  match_fields {
+    id: 2
+    name: "meta.tcp_valid"
+    bitwidth: 1
+    match_type: EXACT
+  }
+  match_fields {
+    id: 3
+    name: "meta.udp_payload_valid"
+    bitwidth: 1
+    match_type: EXACT
+  }
+  match_fields {
+    id: 4
+    name: "meta.ingress_is_server_port"
+    bitwidth: 1
+    match_type: TERNARY
+  }
+  match_fields {
+    id: 5
+    name: "meta.flag_syn"
+    bitwidth: 1
+    match_type: TERNARY
+  }
+  match_fields {
+    id: 6
+    name: "meta.flag_ack"
+    bitwidth: 1
+    match_type: TERNARY
+  }
+  match_fields {
+    id: 7
+    name: "meta.flag_ece"
+    bitwidth: 1
+    match_type: TERNARY
+  }
+  match_fields {
+    id: 8
+    name: "hdr.sip_meta.callback_type"
+    bitwidth: 4
+    match_type: TERNARY
+  }
+  match_fields {
+    id: 9
+    name: "meta.bloom_read_passed"
+    bitwidth: 1
+    match_type: TERNARY
+  }
+  action_refs {
+    id: 23258667
+  }
+  action_refs {
+    id: 17490512
+  }
+  action_refs {
+    id: 21033791
+  }
+  action_refs {
+    id: 19994485
+  }
+  action_refs {
+    id: 20845155
+  }
+  action_refs {
+    id: 30221354
+  }
+  action_refs {
+    id: 31873184
+  }
+  action_refs {
+    id: 19144406
+  }
+  action_refs {
+    id: 18071646
+  }
+  initial_default_action {
+    action_id: 23258667
+  }
+  size: 32
+}
+tables {
+  preamble {
+    id: 36691772
+    name: "SwitchEgress.tb_decide_output_type_1"
+    alias: "tb_decide_output_type_1"
+  }
+  match_fields {
+    id: 1
+    name: "meta.sip_meta_valid"
+    bitwidth: 1
+    match_type: EXACT
+  }
+  match_fields {
+    id: 2
+    name: "meta.tcp_valid"
+    bitwidth: 1
+    match_type: EXACT
+  }
+  match_fields {
+    id: 3
+    name: "hdr.sip_meta.round"
+    bitwidth: 8
+    match_type: EXACT
+  }
+  match_fields {
+    id: 4
+    name: "hdr.sip_meta.callback_type"
+    bitwidth: 4
+    match_type: TERNARY
+  }
+  action_refs {
+    id: 33248452
+  }
+  action_refs {
+    id: 21927312
+  }
+  action_refs {
+    id: 21762977
+  }
+  action_refs {
+    id: 23472045
+  }
+  initial_default_action {
+    action_id: 23472045
+  }
+  size: 16
+}
+actions {
+  preamble {
+    id: 23258667
+    name: "SwitchIngress.drop"
+    alias: "drop"
+  }
+}
+actions {
+  preamble {
+    id: 31091109
+    name: "SwitchIngress.route_to"
+    alias: "route_to"
+  }
+}
+actions {
+  preamble {
+    id: 22718649
+    name: "SwitchIngress.timedelta_step0"
+    alias: "timedelta_step0"
+  }
+}
+actions {
+  preamble {
+    id: 23468941
+    name: "SwitchIngress.timedelta_step1_write"
+    alias: "timedelta_step1_write"
+  }
+}
+actions {
+  preamble {
+    id: 16828154
+    name: "SwitchIngress.timedelta_step2_write"
+    alias: "timedelta_step2_write"
+  }
+}
+actions {
+  preamble {
+    id: 23754217
+    name: "SwitchIngress.timedelta_step1_read"
+    alias: "timedelta_step1_read"
+  }
+}
+actions {
+  preamble {
+    id: 24790935
+    name: "SwitchIngress.timedelta_step2_read"
+    alias: "timedelta_step2_read"
+  }
+}
+actions {
+  preamble {
+    id: 31857578
+    name: "SwitchIngress.timedelta_step3_read"
+    alias: "timedelta_step3_read"
+  }
+}
+actions {
+  preamble {
+    id: 24099729
+    name: "SwitchIngress.set_bloom_1_a"
+    alias: "set_bloom_1_a"
+  }
+}
+actions {
+  preamble {
+    id: 26850070
+    name: "SwitchIngress.set_bloom_2_a"
+    alias: "set_bloom_2_a"
+  }
+}
+actions {
+  preamble {
+    id: 18234050
+    name: "SwitchIngress.get_bloom_1_a"
+    alias: "get_bloom_1_a"
+  }
+}
+actions {
+  preamble {
+    id: 32244277
+    name: "SwitchIngress.get_bloom_2_a"
+    alias: "get_bloom_2_a"
+  }
+}
+actions {
+  preamble {
+    id: 19994485
+    name: "SwitchIngress.client_to_server_nonsyn_ongoing"
+    alias: "client_to_server_nonsyn_ongoing"
+  }
+}
+actions {
+  preamble {
+    id: 20845155
+    name: "SwitchIngress.server_to_client_normal_traffic"
+    alias: "server_to_client_normal_traffic"
+  }
+}
+actions {
+  preamble {
+    id: 30221354
+    name: "SwitchIngress.non_tcp_traffic"
+    alias: "non_tcp_traffic"
+  }
+}
+actions {
+  preamble {
+    id: 17490512
+    name: "SwitchIngress.start_crc_calc_synack"
+    alias: "start_crc_calc_synack"
+  }
+}
+actions {
+  preamble {
+    id: 21033791
+    name: "SwitchIngress.start_crc_calc_tagack"
+    alias: "start_crc_calc_tagack"
+  }
+}
+actions {
+  preamble {
+    id: 31873184
+    name: "SwitchIngress.pre_finalize_synack"
+    alias: "pre_finalize_synack"
+  }
+}
+actions {
+  preamble {
+    id: 19144406
+    name: "SwitchIngress.pre_finalize_tagack"
+    alias: "pre_finalize_tagack"
+  }
+}
+actions {
+  preamble {
+    id: 18071646
+    name: "SwitchIngress.finalize_tagack"
+    alias: "finalize_tagack"
+  }
+}
+actions {
+  preamble {
+    id: 21762977
+    name: "SwitchEgress.clean_up"
+    alias: "clean_up"
+  }
+}
+actions {
+  preamble {
+    id: 21927312
+    name: "SwitchEgress.sip_final_xor_with_ackm1"
+    alias: "sip_final_xor_with_ackm1"
+  }
+}
+actions {
+  preamble {
+    id: 33248452
+    name: "SwitchEgress.craft_synack_reply"
+    alias: "craft_synack_reply"
+  }
+}
+actions {
+  preamble {
+    id: 23472045
+    name: "SwitchEgress.nop"
+    alias: "nop"
+  }
+}
+actions {
+  preamble {
+    id: 32971774
+    name: "SwitchEgress.compute_tcp_length"
+    alias: "compute_tcp_length"
+  }
+}
+registers {
+  preamble {
+    id: 373658420
+    name: "SwitchIngress.reg_timedelta"
+    alias: "reg_timedelta"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 32
+      }
+    }
+  }
+  size: 1
+}
+registers {
+  preamble {
+    id: 372158559
+    name: "SwitchIngress.reg_bloom_1"
+    alias: "reg_bloom_1"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 1
+      }
+    }
+  }
+  size: 4096
+}
+registers {
+  preamble {
+    id: 385603576
+    name: "SwitchIngress.reg_bloom_2"
+    alias: "reg_bloom_2"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 1
+      }
+    }
+  }
+  size: 4096
+}
+type_info {
+}
