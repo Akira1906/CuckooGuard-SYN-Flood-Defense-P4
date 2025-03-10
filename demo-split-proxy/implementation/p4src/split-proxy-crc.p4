@@ -610,7 +610,7 @@ control SwitchIngress(
         hdr.tcp.dst_port=tmp_port;
 	
         //packet crafting 
-        // hdr.tcp.data_offset=5; removed to properly include tcp options in header
+        hdr.tcp.data_offset=5; //removed to properly include tcp options in header
         
         hdr.tcp.flag_ack=1;
         hdr.tcp.flag_syn=1;
