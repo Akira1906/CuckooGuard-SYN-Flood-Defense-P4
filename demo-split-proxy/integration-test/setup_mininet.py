@@ -19,7 +19,6 @@ def setup_network():
     net.addLink('s1', 'client')
     net.addLink('s1', 'attacker')
     net.addLink('s1', 'server')
-    # net.addLink('s1', 's1', port1 = 68, port2 = (68 + 128), key= "selfLoop")
 
     net.setIntfPort('s1', 'client', 1)
     net.setIntfPort('s1', 'attacker', 2)

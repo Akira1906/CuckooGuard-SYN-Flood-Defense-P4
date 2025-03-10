@@ -40,7 +40,7 @@ sudo rm -rf /sys/fs/bpf/my_nonpercpu_map
 # Start logging eBPF trace_pipe output to file
 sudo cat /sys/kernel/tracing/trace_pipe >> "ebpf-crc.log" 2>/dev/null &
 
-
+sleep 1
 MN_SERVER_NS='mininet-server-namespace'
 # sudo lsns | grep server | grep "net "
 MN_SERVER_PID=$(sudo lsns | grep "mininet:server" | grep "net " | awk '{print $4}')
@@ -48,9 +48,19 @@ MN_SERVER_PID=$(sudo lsns | grep "mininet:server" | grep "net " | awk '{print $4
 sudo ip netns attach $MN_SERVER_NS $MN_SERVER_PID
 
 BPFIFACE='server-eth0' # This needs to be set manually, mininet will automatically create these interfaces on startup
+# Detach existing TC if
+# sleep 2
+# sudo ip netns exec $MN_SERVER_NS tc qdisc del dev $BPFIFACE clsact
 
 echo "Loading new TC program on $BPFIFACE..."
 sudo /bin/python3 ../implementation/ebpf/tc_load.py $MN_SERVER_NS $BPFIFACE 2 &
+
+sleep 2
+sudo ip netns exec $MN_SERVER_NS tc qdisc show dev server-eth0
+sudo ip netns exec $MN_SERVER_NS tc filter show dev server-eth0
+
+echo "+++++=========++++++++++"
+
 
 sleep 1
 

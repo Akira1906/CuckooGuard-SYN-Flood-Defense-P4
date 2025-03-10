@@ -10,7 +10,7 @@ class DigestController():
     def __init__(self, p4rt_path="p4src/split-proxy-crc.p4info.txtpb"):
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        p4rt_path = os.path.join(script_dir, "p4src/split-proxy-crc_p4rt.txt")
+        p4rt_path = os.path.join(script_dir, p4rt_path)
         json_path = "p4src/split-proxy-crc.json"
         json_path = os.path.join(script_dir, json_path)
         self.topo = load_topo(os.path.join(script_dir, "../integration-test/topology.json"))

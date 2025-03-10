@@ -21,7 +21,7 @@ def main(namespace, device, IFINDEX = None):
     DEBUG_MODE = 1
     print(f"IFINDEX{IFINDEX}") 
     if not IFINDEX:
-        IFINDEX = get_ifindex(device) # this can also be set manually, check ip -a
+        IFINDEX = get_ifindex(device, namespace) # this can also be set manually, check ip -a
 
     flags = 0
     mode = BPF.SCHED_CLS

@@ -99,8 +99,34 @@ tables {
 }
 tables {
   preamble {
-    id: 36691772
-    name: "SwitchEgress.tb_decide_output_type_1"
+    id: 34284659
+    name: "SwitchIngress.ipv4_lpm"
+    alias: "ipv4_lpm"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.dst_addr"
+    bitwidth: 32
+    match_type: LPM
+  }
+  action_refs {
+    id: 16850952
+  }
+  action_refs {
+    id: 23258667
+  }
+  action_refs {
+    id: 21257015
+  }
+  initial_default_action {
+    action_id: 23258667
+  }
+  size: 1024
+}
+tables {
+  preamble {
+    id: 44997589
+    name: "SwitchIngress.tb_decide_output_type_1"
     alias: "tb_decide_output_type_1"
   }
   match_fields {
@@ -128,60 +154,49 @@ tables {
     match_type: TERNARY
   }
   action_refs {
-    id: 33248452
+    id: 19547737
   }
   action_refs {
-    id: 21927312
+    id: 26309864
   }
   action_refs {
-    id: 21762977
+    id: 20242876
   }
   action_refs {
-    id: 23472045
+    id: 29846138
   }
   initial_default_action {
-    action_id: 23472045
+    action_id: 29846138
   }
   size: 16
 }
-tables {
+actions {
   preamble {
-    id: 49330607
-    name: "SwitchEgress.ipv4_lpm"
-    alias: "ipv4_lpm"
-  }
-  match_fields {
-    id: 1
-    name: "hdr.ipv4.dst_addr"
-    bitwidth: 32
-    match_type: LPM
-  }
-  action_refs {
-    id: 25399720
-  }
-  action_refs {
-    id: 28562751
-  }
-  action_refs {
     id: 21257015
+    name: "NoAction"
+    alias: "NoAction"
+    annotations: "@noWarn(\"unused\")"
   }
-  initial_default_action {
-    action_id: 28562751
+}
+actions {
+  preamble {
+    id: 19760556
+    name: "SwitchIngress.skip_routing"
+    alias: "skip_routing"
   }
-  size: 1024
 }
 actions {
   preamble {
     id: 23258667
     name: "SwitchIngress.drop"
-    alias: "SwitchIngress.drop"
+    alias: "drop"
   }
 }
 actions {
   preamble {
-    id: 31091109
-    name: "SwitchIngress.route_to"
-    alias: "route_to"
+    id: 29846138
+    name: "SwitchIngress.nop"
+    alias: "nop"
   }
 }
 actions {
@@ -312,58 +327,8 @@ actions {
 }
 actions {
   preamble {
-    id: 21257015
-    name: "NoAction"
-    alias: "NoAction"
-    annotations: "@noWarn(\"unused\")"
-  }
-}
-actions {
-  preamble {
-    id: 21762977
-    name: "SwitchEgress.clean_up"
-    alias: "clean_up"
-  }
-}
-actions {
-  preamble {
-    id: 21927312
-    name: "SwitchEgress.sip_final_xor_with_ackm1"
-    alias: "sip_final_xor_with_ackm1"
-  }
-}
-actions {
-  preamble {
-    id: 33248452
-    name: "SwitchEgress.craft_synack_reply"
-    alias: "craft_synack_reply"
-  }
-}
-actions {
-  preamble {
-    id: 28562751
-    name: "SwitchEgress.drop"
-    alias: "SwitchEgress.drop"
-  }
-}
-actions {
-  preamble {
-    id: 23472045
-    name: "SwitchEgress.nop"
-    alias: "nop"
-  }
-}
-actions {
-  preamble {
-    id: 32971774
-    name: "SwitchEgress.compute_tcp_length"
-    alias: "compute_tcp_length"
-  }
-}
-actions {
-  preamble {
-    id: 25399720
-    name: "SwitchEgress.ipv4_forward"
+    id: 16850952
+    name: "SwitchIngress.ipv4_forward"
     alias: "ipv4_forward"
   }
   params {
@@ -375,6 +340,34 @@ actions {
     id: 2
     name: "port"
     bitwidth: 9
+  }
+}
+actions {
+  preamble {
+    id: 20242876
+    name: "SwitchIngress.clean_up"
+    alias: "clean_up"
+  }
+}
+actions {
+  preamble {
+    id: 26309864
+    name: "SwitchIngress.sip_final_xor_with_ackm1"
+    alias: "sip_final_xor_with_ackm1"
+  }
+}
+actions {
+  preamble {
+    id: 19547737
+    name: "SwitchIngress.craft_synack_reply"
+    alias: "craft_synack_reply"
+  }
+}
+actions {
+  preamble {
+    id: 30248700
+    name: "SwitchIngress.compute_tcp_length"
+    alias: "compute_tcp_length"
   }
 }
 registers {

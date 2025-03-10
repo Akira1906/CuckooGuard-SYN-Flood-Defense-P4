@@ -30,7 +30,7 @@
 //time event 2^16 ns
 #define COOKIE_PERIOD 4096
 #define MAX_COOKIE_AGE 3 
-
+// TODO: this should be 0 long term
 // enabled debugging
 #ifndef DEBUG
 #define DEBUG 1

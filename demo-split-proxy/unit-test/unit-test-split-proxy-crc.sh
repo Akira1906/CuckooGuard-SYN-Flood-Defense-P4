@@ -93,9 +93,10 @@ sudo simple_switch_grpc \
      -i 1@veth0 \
      -i 2@veth2 \
      -i 3@veth4 \
-     -i 68@veth6 \
-     -i 196@veth7 \
      --no-p4 &
+
+    #  -i 68@veth6 \
+    #  -i 196@veth7 \
 
 echo "Started simple_switch_grpc..."
 

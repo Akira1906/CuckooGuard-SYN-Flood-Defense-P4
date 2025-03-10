@@ -94,16 +94,16 @@ class DemoTumTest(BaseTest):
 class UnitTest(DemoTumTest):
 
     def runTest(self):
-        self.client_mac = "00:00:00:00:00:01"  # h1 MAC
-        self.attacker_mac = "00:00:00:00:00:02"  # h2 MAC
-        self.server_mac = "00:00:00:00:00:03"  # h3 MAC
+        self.client_mac = "00:00:0a:00:01:01"  # h1 MAC
+        self.attacker_mac = "00:00:0a:00:01:02"  # h2 MAC
+        self.server_mac = "00:00:0a:00:01:03"  # h3 MAC
         self.switch_client_mac = "00:01:0a:00:01:01"  # s1 client MAC
         self.switch_attacker_mac = "00:01:0a:00:01:01"# s1 attacker MAC
         self.switch_server_mac = "00:01:0a:00:01:01" # s1 server MAC
 
         self.client_ip = "10.0.1.1"
         self.attacker_ip = "10.0.1.2"
-        self.server_ip = "12.0.0.3"
+        self.server_ip = "10.0.1.3"
 
         self.client_port = 1234
         self.server_port = 81
@@ -137,8 +137,8 @@ class UnitTest(DemoTumTest):
 
         exp_pkt = ( 
             Ether(dst=self.client_mac, src=self.switch_client_mac, type=0x0800) /
-            IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, seq=7063, ack=1, flags="SA", window=8192)
+            IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=self.server_port, dport=self.client_port, seq=26250, ack=1, flags="SA", window=8192)
         )
 
         # pkt_mask = get_packet_mask(exp_pkt)
@@ -150,7 +150,7 @@ class UnitTest(DemoTumTest):
         ack_pkt = (
             Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=7064, window=8192)
+            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=26251, window=8192)
         )
         
         tu.send_packet(self, self.client_iface, ack_pkt)
@@ -160,8 +160,8 @@ class UnitTest(DemoTumTest):
         
         ack_pkt = (
             Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
-            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="AE", seq=0, ack=7064, window=8192)
+            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=self.client_port, dport=self.server_port, flags="AE", seq=0, ack=26251, window=8192)
         )
         
         tu.verify_packet(self, ack_pkt, self.ebpf_iface,)
@@ -172,7 +172,7 @@ class UnitTest(DemoTumTest):
         
         syn_pkt = (
             Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
-            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
             TCP(sport=self.client_port, dport=self.server_port, flags="S")
         )
         
@@ -221,23 +221,34 @@ class UnitTest(DemoTumTest):
         ack_pkt = (
             Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=7064) /
+            TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=26251) /
             Raw(load=tcp_load)
         )
         tu.send_packet(self, self.client_iface, ack_pkt)
         
-        # Step 1.2: HTTP GET (Proxy -> Server)
+        # Step 1.2 HTTP GET (Proxy -> Server XDP eBPF)
+        
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=26251) /
+            Raw(load=tcp_load)
+        )
+        
+        tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+        
+        # Step 1.2: HTTP GET (Server XDP eBPF -> Server)
 
-        ack_pkt = ( # I had to manually set the checksum, somehow they were different in scapy compared to actual
+        ack_pkt = (
             Ether(dst=self.server_mac, src=self.switch_client_mac, type=0x0800) /
-            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0, ihl=5, len=84) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0, ihl=5, len=84) /
             TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=38) /
             Raw(load=tcp_load)
         )
         
         tu.verify_packet(self, ack_pkt, self.server_iface)
         
-        # Step 2.1: HTTP Answer (Server -> Proxy)
+        # Step 2.1: HTTP Answer (Server -> Server TC eBPF)
         
         resp_pkt = (
             Ether(dst=self.switch_server_mac, src=self.server_mac, type=0x0800) /
@@ -248,12 +259,23 @@ class UnitTest(DemoTumTest):
         
         tu.send_packet(self, self.server_iface, resp_pkt)
         
-        # Step 2.2 HTTP Answer (Proxy -> Client)
+        # Step 2.2 HTTP Answer (Server TC eBPF -> Proxy)
+        
+        ack_pkt = ( # dst=self.client_mac, but I think there is a bug in the P4 program
+            Ether(dst=self.switch_server_mac, src=self.server_mac, type=0x0800) /
+            IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=26251, ack=1+get_len) /
+            Raw(load=b"HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!")
+        )
+        
+        tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+        
+        # Step 2.3 HTTP Answer (Proxy -> Client)
         
         resp_pkt = (
             Ether(dst=self.client_mac, src=self.switch_server_mac, type=0x0800) /
             IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=7064, ack=1+get_len) /
+            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=26251, ack=1+get_len) /
             Raw(load=b"HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!")
         )
         

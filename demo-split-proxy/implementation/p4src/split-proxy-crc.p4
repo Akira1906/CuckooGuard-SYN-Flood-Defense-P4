@@ -9,8 +9,8 @@ const ether_type_t ETHERTYPE_SIPH_INTM = 16w0xff00;
 
 // Testbed parameters
 const bit<9> SERVER_PORT=3; 
-const bit<32> SERVER_IP=0x0c000003;//12.0.0.3
-const mac_addr_t SERVER_MAC = 0x00010A000101;//00:01:0a:00:01:01
+const bit<32> SERVER_IP=0x0a000103;//10.0.1.3
+// const mac_addr_t SERVER_MAC = 0x00010A000101;//00:01:0a:00:01:01
 
 typedef bit<8> ip_protocol_t;
 typedef bit<9> egress_spec_t;
@@ -159,6 +159,8 @@ struct metadata_t {
 
     // newly introduced ot bypass egress
     bit<1> bypass_egress;
+    bit<1> is_tag_ack;
+    bit<1> skip_routing;
 
     standard_metadata_t standard_metadata;
 }
@@ -257,15 +259,19 @@ control SwitchIngress(
         
     action bypass_egress(){
         meta.bypass_egress = 1;
-        // TODO: we do not really use this fuction what is even the functionality in the original implementation?
     }
     action dont_bypass_egress(){
         meta.bypass_egress = 0;
+    }
+
+    action skip_routing(){
+        meta.skip_routing = 1;
     }
      
     action drop() {
         mark_to_drop(standard_metadata);
         bypass_egress();
+        skip_routing();
     }
     action dont_drop(){
         //  Do nothing 
@@ -283,7 +289,7 @@ control SwitchIngress(
     }
     action reflect(){
         //send you back to where you're from
-        route_to(standard_metadata.ingress_port);
+        // route_to(standard_metadata.ingress_port);
     }
     
     action do_recirc(){
@@ -370,30 +376,12 @@ control SwitchIngress(
             (bit<32>)4095);
         reg_bloom_2.read(meta.bloom_read_2, meta.bloom_hash_2);
     }
-    
-    // packet in-out related
-
-    action naive_routing(){ // this is bullshit
-        // standard_metadata.egress_spec = (bit<9>) hdr.ipv4.dst_addr[7:0];
-        
-        // hdr.ethernet.src_addr=1; this is changed
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-        hdr.ethernet.src_addr = SERVER_MAC;
-        hdr.ethernet.dst_addr[47:8] = 0;
-        hdr.ethernet.dst_addr[7:0] = hdr.ipv4.dst_addr[7:0];
-    }
-    
-    action craft_onward_ack(){
-        hdr.tcp.seq_no = hdr.tcp.seq_no - 1;
-        hdr.tcp.data_offset = 5;
-        //add setup tag
-        hdr.tcp.flag_ece = 1;
-    }
 
     // finally, decide next step for all types of packets
     // traffic, stop at first pass
     action client_to_server_nonsyn_ongoing(){
-        route_to(SERVER_PORT);
+        // route_to(SERVER_PORT);
+        // do_routing();
         bypass_egress();
         // dont_drop();
         hdr.sip_meta.setInvalid();
@@ -404,12 +392,10 @@ control SwitchIngress(
         hdr.sip_meta.setInvalid();
         meta.sip_meta_valid = 0;
         hdr.ethernet.ether_type=ETHERTYPE_IPV4;
-        naive_routing();
         bypass_egress();
         // dont_drop();
     }
     action non_tcp_traffic(){
-        naive_routing();
         bypass_egress();
         // dont_drop();
     }
@@ -419,7 +405,7 @@ control SwitchIngress(
         meta.sip_meta_valid = 1;
         hdr.sip_meta.callback_type = CALLBACK_TYPE_SYNACK;
         hdr.sip_meta.egr_port = standard_metadata.ingress_port; 
-        route_to(hdr.sip_meta.egr_port);
+        // route_to(hdr.sip_meta.egr_port);
 
         // Compute CRC32 hash and store in metadata
         hash(meta.cookie_hash, HashAlgorithm.crc32, (bit<32>) 0, 
@@ -430,11 +416,12 @@ control SwitchIngress(
     }
 
     action start_crc_calc_tagack() {
+        meta.is_tag_ack = 1;
         hdr.ethernet.ether_type=ETHERTYPE_SIPH_INTM; // added to correctly recirculate packets
         hdr.sip_meta.setValid(); // added to fix behaviour
         meta.sip_meta_valid = 1;
         hdr.sip_meta.callback_type = CALLBACK_TYPE_TAGACK;
-        hdr.sip_meta.egr_port = SERVER_PORT; 
+        hdr.sip_meta.egr_port = SERVER_PORT;
         bit<32> seq_no_minusone = hdr.tcp.seq_no - 1; // fixed the sequence number expectation
 
         // Compute CRC32 hash and store in metadata
@@ -458,12 +445,20 @@ control SwitchIngress(
         dont_bypass_egress();
         // dont_drop();
     }
-    
+
+    action craft_onward_ack(){
+        hdr.tcp.seq_no = hdr.tcp.seq_no - 1;
+        hdr.tcp.data_offset = 5;
+        //add setup tag
+        hdr.tcp.flag_ece = 1;
+    }
+
     action finalize_tagack(){
-        route_to(hdr.sip_meta.egr_port);
+        // standard_metadata.egress_spec = hdr.sip_meta.egr_port;
+        // route_to(hdr.sip_meta.egr_port);
         //don't bypass egress, perform checksum update in egress deparser 
-        dont_bypass_egress();
-        hdr.sip_meta.round=99; //DO_CHECKSUM
+        // dont_bypass_egress();
+        // hdr.sip_meta.round=99; //DO_CHECKSUM remove this!
         // if failed cookie check, drop
         // ig_intr_dprsr_md.drop_ctl = (bit<3>) meta.ack_verify_timediff_exceeded_limit;
 
@@ -477,6 +472,25 @@ control SwitchIngress(
         // remove sip_meta header
         //hdr.sip_meta.setInvalid();  hdr.ethernet.ether_type=ETHERTYPE_IPV4;
     }
+    
+    // action finalize_tagack(){
+    //     // route_to(hdr.sip_meta.egr_port);
+    //     // //don't bypass egress, perform checksum update in egress deparser 
+    //     // dont_bypass_egress();
+    //     // hdr.sip_meta.round=99; //DO_CHECKSUM
+    //     // // if failed cookie check, drop
+    //     // // ig_intr_dprsr_md.drop_ctl = (bit<3>) meta.ack_verify_timediff_exceeded_limit;
+
+    //     // if (meta.ack_verify_timediff_exceeded_limit == 1) {
+    //     //     mark_to_drop(standard_metadata);
+    //     //     // TODO: right now the timediff seems to be off
+    //     // }
+    //     // // not sure if this should be here or the the dropping happens in craft_onward_ack()
+    //     // craft_onward_ack();
+    //     // //move this logic to egress 
+    //     // // remove sip_meta header
+    //     // //hdr.sip_meta.setInvalid();  hdr.ethernet.ether_type=ETHERTYPE_IPV4;
+    // }
     // TODO check whether egress is vital to the calculatio of siphash or anything, if yes then we can't use resubmit() and instead need to use some other mechanism
     // to recirculate the packets when necessary
     @pragma stage 11
@@ -536,90 +550,29 @@ control SwitchIngress(
         size = 32;
     }
 
-    apply {    
-        //stage 0
-        // tb_maybe_sip_init.apply();
-       
-        //calculate all other cases in parallel
-
-        timedelta_step0();
-        if(meta.udp_payload_valid == 1 && standard_metadata.ingress_port==SERVER_PORT){
-            timedelta_step1_write();
-            timedelta_step2_write();
-            //drop(); //for full parallelization, postpone to triage table
-        }else{
-            timedelta_step1_read();
-            timedelta_step2_read();
-            timedelta_step3_read();
-        }
-        
-        if(meta.tcp_valid == 1 && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
-            set_bloom_1_a();
-            set_bloom_2_a();
-            meta.bloom_read_passed=0;
-            //drop(); //for full parallelization, postpone to triage table
-        }else{
-            get_bloom_1_a();
-            get_bloom_2_a();
-            if(meta.bloom_read_1==1 && meta.bloom_read_2==1){
-                meta.bloom_read_passed=1;
-            }else{
-                meta.bloom_read_passed=0;
-            }
-        }
-        
-        //pre-calculate conditions and save in metadata. used in final stage triage.
-        if(standard_metadata.ingress_port==SERVER_PORT){
-            meta.ingress_is_server_port = 1;
-        }else{
-            meta.ingress_is_server_port = 0;
-        }
-
-        if(hdr.sip_meta.ack_verify_timediff==0 || hdr.sip_meta.ack_verify_timediff==1 || hdr.sip_meta.ack_verify_timediff==2){
-            meta.ack_verify_timediff_exceeded_limit=0;
-        }else{
-            meta.ack_verify_timediff_exceeded_limit=1;
-        }
-        
-        // hdr.sip_meta.round=hdr.sip_meta.round+2; // increment round as part of final-stage triage table
-
-        if(meta.tcp_valid == 1){
-            meta.flag_syn=hdr.tcp.flag_syn;
-            meta.flag_ack=hdr.tcp.flag_ack;
-            meta.flag_ece=hdr.tcp.flag_ece;
-        }
-        else{
-            meta.flag_syn=0;
-            meta.flag_ack=0;
-            meta.flag_ece=0;
-        }
-
-
-        // send the packet to be recirculated by default, either 68 or 68+128 to saturate bandwidth in both directions
-        // bit<1> rnd;
-        // hash(rnd, HashAlgorithm.crc16, (bit<32>)0, {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, (bit<32>)1);
-        // if (rnd == 1) {
-        //     route_to(68);
-        // } else {
-        //     route_to(68+128);
-        // }
-
-        route_to(68); // send the packet to 68 for debugging
-        
-
-        tb_triage_pkt_types_nextstep.apply();
+    // forward packet to the appropriate port
+    action ipv4_forward(mac_addr_t dst_addr, egress_spec_t port) {
+        standard_metadata.egress_spec = port;
+        hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
+        hdr.ethernet.dst_addr = dst_addr;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
-}
 
-// ---------------------------------------------------------------------------
-// Egress Control
-// ---------------------------------------------------------------------------
-control SwitchEgress(
-        inout header_t hdr,
-        inout metadata_t meta,
-        inout standard_metadata_t standard_metadata) {
-    
-    action clean_up(){
+    // we have one table responsible for forwarding packets
+    table ipv4_lpm {
+        key = {
+            hdr.ipv4.dst_addr: lpm;
+        }
+        actions = {
+            ipv4_forward;
+            drop;
+            NoAction;
+        }
+        size = 1024;   // maximum number of entries in the table
+        default_action = drop();
+    }
+
+       action clean_up(){
         meta.sip_meta_valid = 0;
         hdr.sip_meta.setInvalid();
         hdr.ethernet.ether_type=ETHERTYPE_IPV4; 
@@ -672,15 +625,15 @@ control SwitchEgress(
         //routing done in ingress
     }
 
-    action drop(){
-        mark_to_drop(standard_metadata);
-    }
-    action dont_drop(){
-        // packet is automatically forwarded
-    }
+    // action drop(){
+    //     mark_to_drop(standard_metadata);
+    // }
+    // action dont_drop(){
+    //     // packet is automatically forwarded
+    // }
 
-    action nop() {
-    }
+    // action nop() {
+    // }
 
     table tb_decide_output_type_1 {
         key = {
@@ -715,47 +668,131 @@ control SwitchEgress(
         meta.tcp_len = tcpLength;
     }
 
-    // forward packet to the appropriate port
-    action ipv4_forward(mac_addr_t dst_addr, egress_spec_t port) {
-        standard_metadata.egress_spec = port;
-        hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
-        hdr.ethernet.dst_addr = dst_addr;
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-    }
+    // // forward packet to the appropriate port
+    // action ipv4_forward(mac_addr_t dst_addr, egress_spec_t port) {
+    //     standard_metadata.egress_spec = port;
+    //     hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
+    //     hdr.ethernet.dst_addr = dst_addr;
+    //     hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+    // }
 
-    // we have one table responsible for forwarding packets
-    table ipv4_lpm {
-        key = {
-            hdr.ipv4.dst_addr: lpm;
+    // // we have one table responsible for forwarding packets
+    // table ipv4_lpm {
+    //     key = {
+    //         hdr.ipv4.dst_addr: lpm;
+    //     }
+    //     actions = {
+    //         ipv4_forward;
+    //         drop;
+    //         NoAction;
+    //     }
+    //     size = 1024;   // maximum number of entries in the table
+    //     default_action = drop();
+    // }
+
+
+
+    
+
+    apply {    
+        //stage 0
+        // tb_maybe_sip_init.apply();
+       
+        //calculate all other cases in parallel
+
+        timedelta_step0();
+        if(meta.udp_payload_valid == 1 && standard_metadata.ingress_port==SERVER_PORT){
+            timedelta_step1_write();
+            timedelta_step2_write();
+            //drop(); //for full parallelization, postpone to triage table
+        }else{
+            timedelta_step1_read();
+            timedelta_step2_read();
+            timedelta_step3_read();
         }
-        actions = {
-            ipv4_forward;
-            drop;
-            NoAction;
+        
+        if(meta.tcp_valid == 1 && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
+            set_bloom_1_a();
+            set_bloom_2_a();
+            meta.bloom_read_passed=0;
+            //drop(); //for full parallelization, postpone to triage table
+        }else{
+            get_bloom_1_a();
+            get_bloom_2_a();
+            if(meta.bloom_read_1==1 && meta.bloom_read_2==1){
+                meta.bloom_read_passed=1;
+            }else{
+                meta.bloom_read_passed=0;
+            }
         }
-        size = 1024;   // maximum number of entries in the table
-        default_action = drop();
-    }
+        
+        //pre-calculate conditions and save in metadata. used in final stage triage.
+        if(standard_metadata.ingress_port==SERVER_PORT){
+            meta.ingress_is_server_port = 1;
+        }else{
+            meta.ingress_is_server_port = 0;
+        }
 
-    apply {
-        compute_tcp_length();
-        if(meta.bypass_egress == 0){
+        if(hdr.sip_meta.ack_verify_timediff==0 || hdr.sip_meta.ack_verify_timediff==1 || hdr.sip_meta.ack_verify_timediff==2){
+            meta.ack_verify_timediff_exceeded_limit=0;
+        }else{
+            meta.ack_verify_timediff_exceeded_limit=1;
+        }
 
-            if(hdr.sip_meta.round != 99){
-                hdr.sip_meta.round = hdr.sip_meta.round + 2;
+        if(meta.tcp_valid == 1){
+            meta.flag_syn=hdr.tcp.flag_syn;
+            meta.flag_ack=hdr.tcp.flag_ack;
+            meta.flag_ece=hdr.tcp.flag_ece;
+        }
+        else{
+            meta.flag_syn=0;
+            meta.flag_ack=0;
+            meta.flag_ece=0;
+        }
 
-                meta.incoming_ack_minus_1 = hdr.tcp.ack_no - 1;
-                meta.incoming_seq_plus_1 = hdr.tcp.seq_no + 1;
-                // meta.tcp_total_len = 20; remove this is dynanic now
-                
-                meta.redo_checksum = 0;
 
-                hdr.sip_meta.round = 12;
+        // send the packet to be recirculated by default, either 68 or 68+128 to saturate bandwidth in both directions
+        // bit<1> rnd;
+        // hash(rnd, HashAlgorithm.crc16, (bit<32>)0, {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, (bit<32>)1);
+        // if (rnd == 1) {
+        //     route_to(68);
+        // } else {
+        //     route_to(68+128);
+        // }
 
-                tb_decide_output_type_1.apply(); 	 
-            }//endif round!=99
-            else{ //round==99, here from ingress to perform checksum update in deparser  
-            //don't do any further modification of packet 
+        // route_to(68); // send the packet always to 68 for recirculation debugging
+        
+
+        tb_triage_pkt_types_nextstep.apply();
+
+
+         if(meta.bypass_egress == 0){
+            hdr.sip_meta.round = hdr.sip_meta.round + 2;
+
+            meta.incoming_ack_minus_1 = hdr.tcp.ack_no - 1;
+            meta.incoming_seq_plus_1 = hdr.tcp.seq_no + 1;
+            // meta.tcp_total_len = 20; remove this is dynanic now
+            
+            meta.redo_checksum = 0;
+
+            hdr.sip_meta.round = 12;
+
+            tb_decide_output_type_1.apply(); 
+
+            
+            if(meta.is_tag_ack == 1){ //technically recirculation would be necessary
+
+                if(hdr.sip_meta.ack_verify_timediff==0 || hdr.sip_meta.ack_verify_timediff==1 || hdr.sip_meta.ack_verify_timediff==2){
+                    meta.ack_verify_timediff_exceeded_limit=0;
+                }else{
+                    meta.ack_verify_timediff_exceeded_limit=1;
+                    mark_to_drop(standard_metadata);
+                    skip_routing();
+                }
+
+                if(hdr.tcp.isValid() && !hdr.udp.isValid() && hdr.sip_meta.callback_type == CALLBACK_TYPE_TAGACK){
+                    finalize_tagack();
+                }
 
                 //necessary for checksum update 
                 hdr.ipv4.ihl=5;
@@ -767,13 +804,35 @@ control SwitchEgress(
                 hdr.sip_meta.setInvalid();
                 meta.sip_meta_valid = 0;
                 hdr.ethernet.ether_type=ETHERTYPE_IPV4;
-            }
-        }
 
-        // Normal forwarding scenario after processing based on the scenario
-        if (hdr.ipv4.isValid() && meta.sip_meta_valid == 0) {
-           ipv4_lpm.apply();
+            }
+        
         }
+        
+        compute_tcp_length();
+        // standard_metadata.egress_spec = 3;
+        // Normal forwarding scenario after processing based on the scenario
+        if (meta.skip_routing == 0 && hdr.ipv4.isValid() && meta.sip_meta_valid == 0) {
+        // if (hdr.ipv4.isValid()) {
+            ipv4_lpm.apply();
+        }
+        // ipv4_lpm.apply();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Egress Control
+// ---------------------------------------------------------------------------
+control SwitchEgress(
+        inout header_t hdr,
+        inout metadata_t meta,
+        inout standard_metadata_t standard_metadata) {
+    
+ 
+
+    apply {
+        
+       
     }//apply
 }
 

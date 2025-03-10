@@ -24,9 +24,9 @@
 #define TS_UDP_PORT 5555
 #define IP_CSUM_OFF offsetof(struct iphdr, check)
 #define IP_TOTLEN_OFF offsetof(struct iphdr, tot_len)
-
+// TODO: this should be 0 long term
 #ifndef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #endif
 
 #include <linux/in.h>
