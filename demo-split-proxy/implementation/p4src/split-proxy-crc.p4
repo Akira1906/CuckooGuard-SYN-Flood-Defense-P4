@@ -13,6 +13,7 @@ const bit<32> SERVER_IP=0x0c000003;//12.0.0.3
 const mac_addr_t SERVER_MAC = 0x00010A000101;//00:01:0a:00:01:01
 
 typedef bit<8> ip_protocol_t;
+typedef bit<9> egress_spec_t;
 const ip_protocol_t IP_PROTOCOLS_ICMP = 1;
 const ip_protocol_t IP_PROTOCOLS_TCP = 6;
 const ip_protocol_t IP_PROTOCOLS_UDP = 17;
@@ -277,8 +278,8 @@ control SwitchIngress(
         standard_metadata.egress_spec = port;
         // hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
         // hdr.ethernet.src_addr=1; replaced with code below
-        hdr.ethernet.src_addr = SERVER_MAC;
-        hdr.ethernet.dst_addr = (bit<48>) port; 
+        // hdr.ethernet.src_addr = SERVER_MAC;
+        // hdr.ethernet.dst_addr = (bit<48>) port; 
     }
     action reflect(){
         //send you back to where you're from
@@ -373,7 +374,7 @@ control SwitchIngress(
     // packet in-out related
 
     action naive_routing(){ // this is bullshit
-        standard_metadata.egress_spec = (bit<9>) hdr.ipv4.dst_addr[7:0];
+        // standard_metadata.egress_spec = (bit<9>) hdr.ipv4.dst_addr[7:0];
         
         // hdr.ethernet.src_addr=1; this is changed
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
@@ -656,17 +657,17 @@ control SwitchEgress(
         hdr.tcp.dst_port=tmp_port;
 	
         //packet crafting 
-        hdr.tcp.data_offset=5;
+        // hdr.tcp.data_offset=5; removed to properly include tcp options in header
         
         hdr.tcp.flag_ack=1;
         hdr.tcp.flag_syn=1;
 
         hdr.ipv4.ihl=5;
-        hdr.ipv4.total_len=40; 
+        // hdr.ipv4.total_len=40; 
 
         //necessary for checksum update 
         meta.redo_checksum=1;
-        meta.tcp_total_len=20;
+        // meta.tcp_total_len=20; remove this is dynamic now
 
         //routing done in ingress
     }
@@ -714,6 +715,28 @@ control SwitchEgress(
         meta.tcp_len = tcpLength;
     }
 
+    // forward packet to the appropriate port
+    action ipv4_forward(mac_addr_t dst_addr, egress_spec_t port) {
+        standard_metadata.egress_spec = port;
+        hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
+        hdr.ethernet.dst_addr = dst_addr;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+    }
+
+    // we have one table responsible for forwarding packets
+    table ipv4_lpm {
+        key = {
+            hdr.ipv4.dst_addr: lpm;
+        }
+        actions = {
+            ipv4_forward;
+            drop;
+            NoAction;
+        }
+        size = 1024;   // maximum number of entries in the table
+        default_action = drop();
+    }
+
     apply {
         compute_tcp_length();
         if(meta.bypass_egress == 0){
@@ -723,7 +746,7 @@ control SwitchEgress(
 
                 meta.incoming_ack_minus_1 = hdr.tcp.ack_no - 1;
                 meta.incoming_seq_plus_1 = hdr.tcp.seq_no + 1;
-                meta.tcp_total_len = 20;
+                // meta.tcp_total_len = 20; remove this is dynanic now
                 
                 meta.redo_checksum = 0;
 
@@ -736,15 +759,20 @@ control SwitchEgress(
 
                 //necessary for checksum update 
                 hdr.ipv4.ihl=5;
-                hdr.ipv4.total_len=40; 
+                hdr.ipv4.total_len=40; //do we need this to statically set?
 
                 meta.redo_checksum=1;
-                meta.tcp_total_len=20; 
+                // meta.tcp_total_len=20; remove this is dynamic now
                 // remove sip_meta header
                 hdr.sip_meta.setInvalid();
                 meta.sip_meta_valid = 0;
                 hdr.ethernet.ether_type=ETHERTYPE_IPV4;
             }
+        }
+
+        // Normal forwarding scenario after processing based on the scenario
+        if (hdr.ipv4.isValid() && meta.sip_meta_valid == 0) {
+           ipv4_lpm.apply();
         }
     }//apply
 }

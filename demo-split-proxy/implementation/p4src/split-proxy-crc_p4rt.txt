@@ -144,11 +144,37 @@ tables {
   }
   size: 16
 }
+tables {
+  preamble {
+    id: 49330607
+    name: "SwitchEgress.ipv4_lpm"
+    alias: "ipv4_lpm"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.dst_addr"
+    bitwidth: 32
+    match_type: LPM
+  }
+  action_refs {
+    id: 25399720
+  }
+  action_refs {
+    id: 28562751
+  }
+  action_refs {
+    id: 21257015
+  }
+  initial_default_action {
+    action_id: 28562751
+  }
+  size: 1024
+}
 actions {
   preamble {
     id: 23258667
     name: "SwitchIngress.drop"
-    alias: "drop"
+    alias: "SwitchIngress.drop"
   }
 }
 actions {
@@ -286,6 +312,14 @@ actions {
 }
 actions {
   preamble {
+    id: 21257015
+    name: "NoAction"
+    alias: "NoAction"
+    annotations: "@noWarn(\"unused\")"
+  }
+}
+actions {
+  preamble {
     id: 21762977
     name: "SwitchEgress.clean_up"
     alias: "clean_up"
@@ -307,6 +341,13 @@ actions {
 }
 actions {
   preamble {
+    id: 28562751
+    name: "SwitchEgress.drop"
+    alias: "SwitchEgress.drop"
+  }
+}
+actions {
+  preamble {
     id: 23472045
     name: "SwitchEgress.nop"
     alias: "nop"
@@ -317,6 +358,23 @@ actions {
     id: 32971774
     name: "SwitchEgress.compute_tcp_length"
     alias: "compute_tcp_length"
+  }
+}
+actions {
+  preamble {
+    id: 25399720
+    name: "SwitchEgress.ipv4_forward"
+    alias: "ipv4_forward"
+  }
+  params {
+    id: 1
+    name: "dst_addr"
+    bitwidth: 48
+  }
+  params {
+    id: 2
+    name: "port"
+    bitwidth: 9
   }
 }
 registers {

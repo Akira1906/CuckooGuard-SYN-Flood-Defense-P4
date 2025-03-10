@@ -13,7 +13,7 @@ class DigestController():
         p4rt_path = os.path.join(script_dir, "p4src/split-proxy-crc_p4rt.txt")
         json_path = "p4src/split-proxy-crc.json"
         json_path = os.path.join(script_dir, json_path)
-
+        self.topo = load_topo(os.path.join(script_dir, "../integration-test/topology.json"))
         # print(f"p4rt_path : {p4rt_path}")
         # print(f"script_dir: {script_dir}")
         self.ss = SimpleSwitchP4RuntimeAPI(
@@ -66,6 +66,13 @@ class DigestController():
         #                   ["1", "1", "12", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
         # self.ss.table_add("tb_decide_output_type_2", "verify_timediff",
         #                   ["1", "1", "12", str(CALLBACK_TYPE_TAGACK)], [], prio=10)
+        
+        for neigh in self.topo.get_neighbors('s1'):
+            if self.topo.isHost(neigh):
+                self.ss.table_add('ipv4_lpm',
+                                    'ipv4_forward',
+                                    [self.topo.get_host_ip(neigh)],
+                                    [self.topo.node_to_node_mac(neigh, 's1'), str(self.topo.node_to_node_port_num('s1', neigh))])
 
         print("Table entries configured successfully!")
 
