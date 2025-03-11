@@ -12,7 +12,7 @@ import ptf.testutils as tu
 from ptf.base_tests import BaseTest
 import p4runtime_sh.shell as sh
 from scapy.all import Ether, IP, TCP, Raw
-from asyncio import sleep
+from time import sleep
 
 ######################################################################
 # Configure logging
@@ -114,10 +114,60 @@ class UnitTest(DemoTumTest):
         self.server_iface = 3  # h3 -> s1
         self.ebpf_iface = 4
         
+        self.tcp_failed_handshake_outdated_cookie()
         self.tcp_handshake()
         self.valid_packet_sequence()
-        # sleep(0.1)
         self.malicious_packets()
+        
+        
+
+    def tcp_failed_handshake_outdated_cookie(self):
+        """ Simulates a TCP failed handshake between client and web server that fails because the cookie is outdated"""
+        print("\n[INFO] Sending too slow TCP Handshake Packets...")
+
+        # Step 1: SYN (Client -> Server)
+        syn_pkt = (
+            Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=self.client_port, dport=self.server_port+1, seq=0, flags="S")
+        )
+        
+        tu.send_packet(self, self.client_iface, syn_pkt)
+        
+        # Step 2: P4 program answers SYN-ACK (Proxy -> Client)
+
+        exp_pkt = ( 
+            Ether(dst=self.client_mac, src=self.switch_client_mac, type=0x0800) /
+            IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=self.server_port+1, dport=self.client_port, seq=37978, ack=1, flags="SA", window=8192)
+        )
+
+        # pkt_mask = get_packet_mask(exp_pkt)
+        
+        tu.verify_packet(self, exp_pkt, self.client_iface)
+        
+        sleep(10)
+        
+        # Step 3: Correct ACK answer from the client
+        
+        ack_pkt = (
+            Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=self.client_port, dport=self.server_port+1, flags="A", seq=1, ack=37979, window=8192)
+        )
+        
+        tu.send_packet(self, self.client_iface, ack_pkt)
+        
+        
+        # verify packet going from P4 to ebpf
+        
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=self.client_port, dport=self.server_port, flags="AE", seq=0, ack=26251, window=8192)
+        )
+        
+        tu.verify_no_packet(self, ack_pkt, 3)
     
 
     def tcp_handshake(self):
@@ -138,7 +188,7 @@ class UnitTest(DemoTumTest):
         exp_pkt = ( 
             Ether(dst=self.client_mac, src=self.switch_client_mac, type=0x0800) /
             IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, seq=26250, ack=1, flags="SA", window=8192)
+            TCP(sport=self.server_port, dport=self.client_port, seq=26251, ack=1, flags="SA", window=8192)
         )
 
         # pkt_mask = get_packet_mask(exp_pkt)
@@ -150,7 +200,7 @@ class UnitTest(DemoTumTest):
         ack_pkt = (
             Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=26251, window=8192)
+            TCP(sport=self.client_port, dport=self.server_port, flags="A", seq=1, ack=26252, window=8192)
         )
         
         tu.send_packet(self, self.client_iface, ack_pkt)
@@ -161,7 +211,7 @@ class UnitTest(DemoTumTest):
         ack_pkt = (
             Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="AE", seq=0, ack=26251, window=8192)
+            TCP(sport=self.client_port, dport=self.server_port, flags="AE", seq=0, ack=26252, window=8192)
         )
         
         tu.verify_packet(self, ack_pkt, self.ebpf_iface,)
@@ -208,7 +258,6 @@ class UnitTest(DemoTumTest):
         )
         
         tu.verify_packet(self, ack_pkt, self.ebpf_iface)
-        
     
     
     def valid_packet_sequence(self):
@@ -242,7 +291,7 @@ class UnitTest(DemoTumTest):
         ack_pkt = (
             Ether(dst=self.server_mac, src=self.switch_client_mac, type=0x0800) /
             IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0, ihl=5, len=84) /
-            TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=38) /
+            TCP(sport=self.client_port, dport=self.server_port, flags="PA", seq=1, ack=37) /
             Raw(load=tcp_load)
         )
         
@@ -264,7 +313,7 @@ class UnitTest(DemoTumTest):
         ack_pkt = ( # dst=self.client_mac, but I think there is a bug in the P4 program
             Ether(dst=self.switch_server_mac, src=self.server_mac, type=0x0800) /
             IP(src=self.server_ip, dst=self.client_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=26251, ack=1+get_len) /
+            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=26252, ack=1+get_len) /
             Raw(load=b"HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!")
         )
         
@@ -275,7 +324,7 @@ class UnitTest(DemoTumTest):
         resp_pkt = (
             Ether(dst=self.client_mac, src=self.switch_server_mac, type=0x0800) /
             IP(src=self.server_ip, dst=self.client_ip, ttl=63, proto=6, id=1, flags=0) /
-            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=26251, ack=1+get_len) /
+            TCP(sport=self.server_port, dport=self.client_port, flags="PA", seq=26252, ack=1+get_len) /
             Raw(load=b"HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!")
         )
         

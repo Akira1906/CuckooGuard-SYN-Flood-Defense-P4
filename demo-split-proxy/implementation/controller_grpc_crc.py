@@ -33,34 +33,34 @@ class DigestController():
 
         # Configure tb_triage_pkt_types_nextstep
         self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
-                          ["0", "0", "1", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "1", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "start_crc_calc_synack",
-                          ["0", "1", "0", "0", "1", "0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "1", "0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "start_crc_calc_tagack",
-                          ["0", "1", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0"], [], prio=10)
+                          ["1", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "client_to_server_nonsyn_ongoing",
-                          ["0", "1", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "1"], [], prio=10)
+                          ["1", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "1"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
-                          ["0", "1", "0", "1", "0&&&0", "0&&&0", "1", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "1", "0&&&0", "0&&&0", "1", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "server_to_client_normal_traffic",
-                          ["0", "1", "0", "1", "0&&&0", "0&&&0", "0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "1", "0&&&0", "0&&&0", "0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "non_tcp_traffic",
-                          ["0", "0", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "non_tcp_traffic",
-                          ["0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
-        self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_tagack",
-                          ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
-        self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_synack",
-                          ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "1", "0&&&0"], [], prio=10)
-        self.ss.table_add("tb_triage_pkt_types_nextstep", "finalize_tagack",
-                          ["12", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
+                          ["0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+        # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_tagack",
+        #                   ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
+        # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_synack",
+        #                   ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "1", "0&&&0"], [], prio=10)
+        # self.ss.table_add("tb_triage_pkt_types_nextstep", "finalize_tagack",
+        #                   ["12", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
 
-        self.ss.table_add("tb_decide_output_type_1", "craft_synack_reply",
-                          ["1", "1", "12", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
-        self.ss.table_add("tb_decide_output_type_1", "sip_final_xor_with_ackm1",
-                          ["1", "1", "12", str(CALLBACK_TYPE_TAGACK)], [], prio=10)
-        self.ss.table_add("tb_decide_output_type_1", "clean_up",
-                          ["1", "1", "12", "0&&&0"], [], prio=10)
+        self.ss.table_add("tb_decide_output_type", "craft_synack_reply",
+                          ["1", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
+        self.ss.table_add("tb_decide_output_type", "verify_ack",
+                          ["1", str(CALLBACK_TYPE_TAGACK)], [], prio=10)
+        # self.ss.table_add("tb_decide_output_type_1", "clean_up",
+        #                   ["1", "1", "0&&&0"], [], prio=10)
 
         # self.ss.table_add("tb_decide_output_type_2", "sip_final_xor_with_time",
         #                   ["1", "1", "12", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
@@ -69,7 +69,7 @@ class DigestController():
         
         for neigh in self.topo.get_neighbors('s1'):
             if self.topo.isHost(neigh):
-                self.ss.table_add('ipv4_lpm',
+                self.ss.table_add('tb_ipv4_lpm',
                                     'ipv4_forward',
                                     [self.topo.get_host_ip(neigh)],
                                     [self.topo.node_to_node_mac(neigh, 's1'), str(self.topo.node_to_node_port_num('s1', neigh))])

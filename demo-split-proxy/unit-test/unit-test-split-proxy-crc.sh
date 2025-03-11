@@ -1,7 +1,7 @@
 #! /bin/bash
 
 set -e # Exit on error
-set -x # Debugging output
+# set -x # Debugging output
 
 cleanup() {
     sudo pkill --f simple_switch_grpc || true
