@@ -16,7 +16,7 @@ const ip_protocol_t IP_PROTOCOLS_ICMP = 1;
 const ip_protocol_t IP_PROTOCOLS_TCP = 6;
 const ip_protocol_t IP_PROTOCOLS_UDP = 17;
 
-const bit<16> PORT_TIMEDELTA_UPDATE = 5555; //for time delta
+const bit<16> PORT_TIMEDELTA_UPDATE = 5555; // for time delta
 
 const bit<4> CALLBACK_TYPE_SYNACK=1;
 const bit<4> CALLBACK_TYPE_TAGACK=2; 
@@ -525,7 +525,28 @@ control SwitchIngress(
             timedelta_step3_read();
         }
 
-        // Bloomfilter set and get
+        // Bloom Filter set and get
+        // Cuckoo Filter set and get
+
+        if add conditions  and no cuckoo header available{
+            cuck_add_init();
+            // set some kind of cuckoo header up with metadata
+        }
+
+        if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
+            cuckoo_add();
+            // try to add element at current cuckoo metadata possitions
+            // if not successfull adjust cuckoo heade metadata and recirculate the packet
+            // increment the circulation counter of the packet
+            // if circulation counter too high drop packet
+            // keep a counter about how many elements were already added to the cuckoo filter
+        }else{
+            cuckoo_check();
+            // check cuckoo filter if element is added already
+        }
+
+        // cuckoo_delete();
+            // delete element from cuckoo filter
         
         if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
             set_bloom_1_a();

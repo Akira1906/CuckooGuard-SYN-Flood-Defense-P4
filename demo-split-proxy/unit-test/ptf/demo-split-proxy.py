@@ -114,11 +114,51 @@ class UnitTest(DemoTumTest):
         self.server_iface = 3  # h3 -> s1
         self.ebpf_iface = 4
         
+        self.test_insertion_bloom()
         self.tcp_failed_handshake_outdated_cookie()
         self.tcp_handshake()
         self.valid_packet_sequence()
         self.malicious_packets()
         
+
+
+    def test_insertion_bloom(self):
+        
+        client_port = self.client_port -1
+        
+        # Step 1: trigger insertion into Bloom Filter
+
+        print("\n[INFO] Testing Bloom Filter Insertion...")
+
+        # packet from ebpf to P4 signaling to add the connection to the Bloomfilter
+        
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port, flags="E", seq=1, ack=38, window=502)
+        )
+        
+        tu.send_packet(self,self.ebpf_iface, ack_pkt)
+        
+        # Step 4: try to send legitimate TCP packet through P4 check if it gets through, if yes Bloom Filter operation was successfull
+        
+        tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
+        ack_pkt = (
+            Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+            Raw(load=tcp_load)
+        )
+        tu.send_packet(self, self.client_iface, ack_pkt)
+        
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+            Raw(load=tcp_load)
+        )
+        
+        tu.verify_packet(self, ack_pkt, self.ebpf_iface)
         
 
     def tcp_failed_handshake_outdated_cookie(self):
@@ -159,7 +199,7 @@ class UnitTest(DemoTumTest):
         tu.send_packet(self, self.client_iface, ack_pkt)
         
         
-        # verify packet going from P4 to ebpf
+        # verify packet not going from P4 to ebpf
         
         ack_pkt = (
             Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
