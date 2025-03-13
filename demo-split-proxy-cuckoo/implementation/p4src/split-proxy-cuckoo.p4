@@ -4,8 +4,16 @@
 typedef bit<48> mac_addr_t;
 typedef bit<32> ipv4_addr_t;
 typedef bit<16> ether_type_t;
+// cuckoo fingeprint size
+typedef bit<10> cuckoo_fingerprint_t;
 const ether_type_t ETHERTYPE_IPV4 = 16w0x0800;
 const ether_type_t ETHERTYPE_SIPH_INTM = 16w0xff00;
+
+// Cuckoo Filter Parameters
+// Determine constants using formula
+const bit<32> capacity = 100; // size of the filter
+const bit<32> bucket_size = 4;
+const bit<32> max_kicks = 500;
 
 // Testbed parameters
 const bit<9> SERVER_PORT=3; 
@@ -30,6 +38,11 @@ header ethernet_h {
     mac_addr_t dst_addr;
     mac_addr_t src_addr;
     bit<16> ether_type;
+}
+
+header cuckoo_h {
+    cuckoo_fingerprint_t fingerprint;
+    bit<32> index;
 }
 
 header ipv4_h {
@@ -107,6 +120,14 @@ struct metadata_t {
     bit<32> bloom_hash_2;
 
     bit<1> bloom_read_passed;
+
+    // Cuckoo Filter
+    bit<32> cuckoo_index1;
+    bit<32> cuckoo_index2;
+    bit<2> cuckoo_insert_success_pos;
+    bit<1> cuckoo_insert_success;
+    bit<1> cuckoo_check_sucess;
+
     
 
     // Packet metadata
@@ -511,6 +532,142 @@ control SwitchIngress(
         meta.tcp_len = tcpLength;
     }
 
+    // CUCKOO Filter
+    // fingerprint: 10 bits, 79 * 4 = 316 entries
+    register<cuckoo_fingerprint_t>(32w316) reg_cuckoo;
+
+    action cuckoo_bucket_insert(bit<32> index) {
+        // check all 4 possible bucket values and insert if any of them is empty
+
+        // bucket index -> entry index in register
+        index = index * 4;
+        
+        cuckoo_fingerprint_t curr_fingerprint = 0;
+
+        reg_cuckoo.read(curr_fingerprint, (bit<32>) index);
+        meta.cuckoo_insert_success_pos = 0;
+        if (curr_fingerprint != 0) {
+            reg_cuckoo.read(curr_fingerprint, (bit<32>) index + 1);
+            meta.cuckoo_insert_success_pos = 1;
+        }
+
+        if (curr_fingerprint != 0) {
+            reg_cuckoo.read(curr_fingerprint, (bit<32>) index + 2);
+            meta.cuckoo_insert_success_pos = 2;
+        }
+
+        if (curr_fingerprint != 0) {
+            reg_cuckoo.read(curr_fingerprint, (bit<32>) index + 3);
+            meta.cuckoo_insert_success_pos = 3;
+        }
+
+        // If found free entry in bucket[index] then insert
+        if (curr_fingerprint == 0) {
+            meta.cuckoo_insert_success = 1;
+            index = index + meta.cucko_insert_success_pos;
+
+            reg_cuckoo.write((bit<32>) index, hdr.cuckoo.fingerprint);            
+        }
+    }
+
+    action cuckoo_calc_index_pair() {
+        // calculate index1, index_hash(item)
+        hash(meta.cuckoo_index1, HashAlgorithm.crc32, (bit<32>)0, {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port},
+        (bit<32>) 315);
+
+        // index2, index_hash(fingerprint)
+        hash(meta.cuckoo_index2, HashAlgorithm.crc32, (bit<32>)0, {hdr.cuckoo.fingerprint},
+        (bit<32>) 315);
+        meta.cuckoo_index2 = meta.cuckoo_index1 ^ meta.uckoo_index2;
+    }
+
+    action cuckoo_calc_fingerprint() {
+        bit<32> index_hash;
+        hash(index_hash, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4294967295);
+
+        hdr.cuckoo.fingerprint = index_hash[31:22];
+        meta.pseudo_random_bits = index_hash[3:0];
+    }
+
+    action cuckoo_add_init() {
+        cuckoo_calc_index_pair();
+
+        // meta.cuckoo_index1, meta.cuckoo_index2
+
+        // check if bucket at index1 is empty
+
+        cuckoo_bucket_insert(meta.cuckoo_index1);
+
+        if (meta.cuckoo_insert_success == 0){
+            cuckoo_bucket_insert(meta.cuckoo_index2);
+        }
+
+        // If unsuccessfull then start the insertion-kick loop
+        if (meta.cuckoo_insert_success == 0){
+
+            // Choose a random out of the indices to save to header
+
+            if (meta.pseudo_random_bit == 1) {
+                hdr.cuckoo.index = meta.cuckoo_index1;
+            }
+            else {
+                hdr.cuckoo.index = meta.cuckoo_index2;
+            }
+            // all necessary metadata is now set in the cuckoo header
+            hdr.cuckoo.setValid();
+             // this is a marker for cuckoo to start the kicking process
+
+        }
+
+
+        // reg_cuckoo.read(stored_fingerprint, (bit<32>) );
+
+    }
+
+    action cuckoo_kick_round() {
+
+    }
+
+    // NOTE: maybe register reading could be optimized by using registers of size 4 * fingerprint = bucke size
+    //       this way we can only need to read once from register and then do bit splicing to check
+    // TODO
+
+    action cuckoo_check_index(bit<32> index) {
+
+        cuckoo_fingerprint_t curr_fingerprint;
+
+        reg_cuckoo.read(curr_fingerprint, (bit<32>) index);
+
+        if (curr_fingerprint != hdr.cuckoo.fingerprint) {
+            reg_cuckoo.read(curr_fingerprint, (bit<32>) index + 1);
+        }
+
+        if (curr_fingerprint != hdr.cuckoo.fingerprint) {
+            reg_cuckoo.read(curr_fingerprint, (bit<32>) index + 2);
+        }
+
+        if (curr_fingerprint != hdr.cuckoo.fingerprint) {
+            reg_cuckoo.read(curr_fingerprint, (bit<32>) index + 3);
+        }
+
+        if (curr_fingerprint == hdr.cuckoo.fingerprint) {
+            meta.cuckoo_check_sucess = 1;
+        }
+    }
+
+    action cuckoo_check() {
+        cuckoo_calc_fingerprint();
+        cuckoo_calc_index_pair();
+        meta.cuckoo_index1 = meta.cuckoo_index1 << 2; //left shift twice instead of multiply with 4
+        meta.cuckoo_index2 = meta.cuckoo_index2 << 2;
+        
+        cuckoo_check_index(meta.cuckoo_index1);
+        cuckoo_check_index(meta.cuckoo_index2);
+        // check if this exact fingerprint is already in one of the two buckets
+    }
+
 
     apply {
 
@@ -525,29 +682,34 @@ control SwitchIngress(
             timedelta_step3_read();
         }
 
-        // Bloom Filter set and get
         // Cuckoo Filter set and get
 
-        if add conditions  and no cuckoo header available{
-            cuck_add_init();
-            // set some kind of cuckoo header up with metadata
+        if (hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1 && ! hdr.cuckoo.isValid()){
+            // if tcp message marks addition
+                cuckoo_calc_fingerprint();
+                cuck_add_init();
+                // if possible immediately add element to cuckoo filter if not
+                // set up cuckoo header up with metadata to start kicking process
+
+            // else
+                // cuckoo_delete();
+                // delete element from cuckoo filter
+        
         }
 
-        if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
+        if(hdr.cuckoo.isValid()){
             cuckoo_add();
-            // try to add element at current cuckoo metadata possitions
-            // if not successfull adjust cuckoo heade metadata and recirculate the packet
+            // swap the fingerprint with one entry from bucket[index]
+            // if not successfull recirculate the packet
             // increment the circulation counter of the packet
             // if circulation counter too high drop packet
             // keep a counter about how many elements were already added to the cuckoo filter
-        }else{
+        }else{ // standard case
             cuckoo_check();
             // check cuckoo filter if element is added already
+            // sets meta.cuckoo_read_passed bit
         }
 
-        // cuckoo_delete();
-            // delete element from cuckoo filter
-        
         if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
             set_bloom_1_a();
             set_bloom_2_a();
