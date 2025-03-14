@@ -7,11 +7,11 @@ import argparse
 
 class DigestController():
 
-    def __init__(self, p4rt_path="p4src/split-proxy-crc.p4info.txtpb"):
+    def __init__(self, p4rt_path="p4src/split-proxy-cuckoo.p4info.txtpb"):
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
         p4rt_path = os.path.join(script_dir, p4rt_path)
-        json_path = "p4src/split-proxy-crc.json"
+        json_path = "p4src/split-proxy-cuckoo.json"
         json_path = os.path.join(script_dir, json_path)
         self.topo = load_topo(os.path.join(script_dir, "../integration-test/topology.json"))
         # print(f"p4rt_path : {p4rt_path}")
@@ -33,21 +33,25 @@ class DigestController():
 
         # Configure tb_triage_pkt_types_nextstep
         self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
-                          ["0", "1", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "1", "0", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "start_crc_calc_synack",
-                          ["1", "0", "0", "1", "0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "0", "1", "0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "start_crc_calc_tagack",
-                          ["1", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0"], [], prio=10)
+                          ["1", "0", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "client_to_server_nonsyn_ongoing",
-                          ["1", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "1"], [], prio=10)
+                          ["1", "0", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "1"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
-                          ["1", "0", "1", "0&&&0", "0&&&0", "1", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "1", "0&&&0", "0&&&0", "1", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "server_to_client_normal_traffic",
-                          ["1", "0", "1", "0&&&0", "0&&&0", "0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "1", "0&&&0", "0&&&0", "0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "non_tcp_traffic",
-                          ["0", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "non_tcp_traffic",
-                          ["0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+        self.ss.table_add("tb_triage_pkt_types_nextstep", "NoAction",
+                          ["1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+        self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
+                          ["1", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_tagack",
         #                   ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
         # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_synack",

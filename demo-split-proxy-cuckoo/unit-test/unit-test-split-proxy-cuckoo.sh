@@ -23,36 +23,15 @@ echo "P is: $P"
 source ${HOME}/p4dev-python-venv/bin/activate
 
 # Only show a list of tests
-#ptf --pypath "$P" --test-dir ptf --list
-#exit 0
+# ptf --pypath "$P" --test-dir ptf --list
+# exit 0
 
-# Clean up existing veth pairs and namespaces
-# sudo ip link del veth0 || true
-# sudo ip link del veth2 || true
-# sudo ip link del veth4 || true
-
-# sudo ip netns del net1 || true
-# sudo ip netns del net2 || true
-
-# Recreate namespaces
-# sudo ip netns add net1
-# sudo ip netns add net2
 
 # Create veth pairs correctly
 sudo ip link add veth0 type veth peer name veth1 || true
 sudo ip link add veth2 type veth peer name veth3 || true
 sudo ip link add veth4 type veth peer name veth5 || true
 sudo ip link add veth6 type veth peer name veth7 || true
-
-# Move veth interfaces into namespaces
-# sudo ip link set veth1 netns net1
-# sudo ip link set veth3 netns net1
-# sudo ip link set veth5 netns net1
-
-# Bring up interfaces inside namespaces
-# sudo ip netns exec net1 ip link set veth1 up
-# sudo ip netns exec net1 ip link set veth3 up
-# sudo ip netns exec net1 ip link set veth5 up
 
 # Bring up root namespace interfaces
 sudo ip link set veth0 up || true
@@ -83,6 +62,9 @@ p4c --target bmv2 \
 # Remove old log file
 
 /bin/rm -f split-proxy-cuckoo-log.txt
+/bin/rm -f split-proxy-cuckoo-log.1.txt
+/bin/rm -f split-proxy-cuckoo-log.2.txt
+/bin/rm -f split-proxy-cuckoo-log.3.txt
 /bin/rm -f ebpf-cuckoo.log
 
 sudo simple_switch_grpc \
@@ -93,10 +75,9 @@ sudo simple_switch_grpc \
      -i 1@veth0 \
      -i 2@veth2 \
      -i 3@veth4 \
+     -i 68@veth6 \
+     -i 196@veth7 \
      --no-p4 &
-
-    #  -i 68@veth6 \
-    #  -i 196@veth7 \
 
 echo "Started simple_switch_grpc..."
 
@@ -149,6 +130,8 @@ sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
     -i 2@veth3 \
     -i 3@veth5 \
     -i 4@veth4 \
+    -i 68@veth6 \
+    -i 196@veth7 \
     --test-params="grpcaddr='localhost:9559';p4info='../implementation/p4src/split-proxy-cuckoo.p4info.txtpb';config='../implementation/p4src/split-proxy-cuckoo.json'" \
     --test-dir ptf
 

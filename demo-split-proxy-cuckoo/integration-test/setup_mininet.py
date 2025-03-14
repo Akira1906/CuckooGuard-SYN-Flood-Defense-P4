@@ -15,7 +15,7 @@ def setup_network():
     net.addHost('attacker')
     net.addHost('server')
 
-    net.setP4Source('s1', os.path.join(script_dir, '../implementation/p4src/split-proxy-crc.p4'))
+    net.setP4Source('s1', os.path.join(script_dir, '../implementation/p4src/split-proxy-cuckoo.p4'))
     net.addLink('s1', 'client')
     net.addLink('s1', 'attacker')
     net.addLink('s1', 'server')
