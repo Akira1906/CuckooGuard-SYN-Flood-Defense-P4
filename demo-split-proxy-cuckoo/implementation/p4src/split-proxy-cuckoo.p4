@@ -375,6 +375,7 @@ control SwitchIngress(
             hdr.tcp.flag_syn: ternary;
             hdr.tcp.flag_ack: ternary;
             hdr.tcp.flag_ece: ternary; 
+            hdr.tcp.flag_psh: ternary;
             
             meta.callback_type: ternary;
             
@@ -397,22 +398,22 @@ control SwitchIngress(
         // const entries = {//all types of packets, from linker_config.json in Lucid
              
         //      //"event" : "udp_from_server_time"
-        //      (false,true,0,   true,    _,_,_,  _, _): drop(); //already saved time delta
+        //      (false,true,0,   true,    _,_,_,_,  _, _): drop(); //already saved time delta
         //      //"event" : "iptcp_to_server_syn"
-        //      (true,false,0,   false,   1,0,_,  _, _ ): start_crc_calc_synack();
+        //      (true,false,0,   false,   1,0,_,0,  _, _ ): start_crc_calc_synack();
         //      //"event" : "iptcp_to_server_non_syn"
-        //      (true,false,0,   false,   0,_,_,  _, false): start_crc_calc_tagack();
-        //      (true,false,0,   false,   0,_,_,  _, true): client_to_server_nonsyn_ongoing();
+        //      (true,false,0,   false,   0,_,_,0,  _, false): start_crc_calc_tagack();
+        //      (true,false,0,   false,   0,_,_,0,  _, true): client_to_server_nonsyn_ongoing();
              
         //      //"event" : "iptcp_from_server_tagged"
-        //      (true,false,0,   true,    _,_,1,  _, _): drop(); //already added to cuckoo filter
+        //      (true,false,0,   true,    _,_,1,_,  _, _): drop(); //already added to cuckoo filter
         //      //"event" : "iptcp_from_server_non_tagged"
-        //      (true,false,0,   true,    _,_,0,  _, _): server_to_client_normal_traffic();
+        //      (true,false,0,   true,    _,_,0,_,  _, _): server_to_client_normal_traffic();
         //      //"event" : "non_tcp_in"
-        //      (false,true,0, false,     _,_,_,  _, _): non_tcp_traffic();
-        //      (false,false,0, _, _, _, _, _, _): non_tcp_traffic();
-        //      (true, false, _, _, _, _, _, _, _): NoAction();
-        //      (true, false,0,_, _, _, _, _, _, _): drop();
+        //      (false,true,0, false,     _,_,_,_,  _, _): non_tcp_traffic();
+        //      (false,false,0, _, _, _, _, _, _,_): non_tcp_traffic();
+        //      (true, false, _, _, _, _, _, _, _,_): NoAction();
+        //      (true, false,0,_, _, _, _, _, _, _,_): drop();
         size = 32;
     }
 

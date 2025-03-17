@@ -33,25 +33,25 @@ class DigestController():
 
         # Configure tb_triage_pkt_types_nextstep
         self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
-                          ["0", "1", "0", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "1", "0", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "start_crc_calc_synack",
-                          ["1", "0", "0", "0", "1", "0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "0", "1", "0", "0&&&0", "0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "start_crc_calc_tagack",
-                          ["1", "0", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0"], [], prio=10)
+                          ["1", "0", "0", "0", "0", "0&&&0", "0&&&0", "0", "0&&&0", "0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "client_to_server_nonsyn_ongoing",
-                          ["1", "0", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "1"], [], prio=10)
+                          ["1", "0", "0", "0", "0", "0&&&0", "0&&&0", "0&&&0","0&&&0", "1"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
-                          ["1", "0", "0", "1", "0&&&0", "0&&&0", "1", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "1", "0&&&0", "0&&&0", "1", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "server_to_client_normal_traffic",
-                          ["1", "0", "0", "1", "0&&&0", "0&&&0", "0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "1", "0&&&0", "0&&&0", "0","0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "non_tcp_traffic",
-                          ["0", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0","0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "non_tcp_traffic",
-                          ["0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["0", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0","0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "NoAction",
-                          ["1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0","0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "drop",
-                          ["1", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
+                          ["1", "0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0","0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_tagack",
         #                   ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
         # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_synack",

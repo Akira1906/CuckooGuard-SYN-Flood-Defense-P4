@@ -143,6 +143,7 @@ int tc_egress(struct __sk_buff *skb)
             bpf_trace_printk("Egress: SYN flag 0x%x", tcp->syn);
             bpf_trace_printk("Egress: ACK flag 0x%x", tcp->ack);
             bpf_trace_printk("Egress: ECE flag 0x%x", tcp->ece);
+            bpf_trace_printk("Egress: FIN flag 0x%x", tcp->fin);
         }
         int ret;
 
@@ -217,11 +218,16 @@ int tc_egress(struct __sk_buff *skb)
                 // get rid of options by changing tcplen
                 tcp->doff = 0x5;
 
+                bpf_trace_printk("SYN-ACK packet: seq:0x%x, ack:0x%x", ntohl(tcp->seq), ntohl(tcp->ack_seq));
+                bpf_trace_printk("SYN-ACK packet: seq:0x%x, ack:0x%x", tcp->seq, tcp->ack_seq);
+                bpf_trace_printk("SYN-ACK packet: seq:0x%x, ack:0x%x", htonl(tcp->seq), htonl(tcp->ack_seq));
                 // set proper seq and ack numbers
                 uint32_t old_ack_seq;
                 old_ack_seq = ntohl(tcp->ack_seq);
                 tcp->ack_seq = htonl(ntohl(tcp->seq) + 0x1);
                 tcp->seq = htonl(old_ack_seq);
+
+                
 
                 // ip->id = htons(map_val.ip_id + 0x1);
                 // bpf_trace_printk("NEW ID 0x%x", ntohs(ip->id));
@@ -240,7 +246,7 @@ int tc_egress(struct __sk_buff *skb)
                 if (DEBUG)
                     bpf_trace_printk("EGRESS: delta is 0x%x", map_val.delta);
 
-                map_val.map_state = ST_ACK_SENT;
+                map_val.map_state = ST_NOTIFY_PROXY;
                 // overwrite previous value associated with key
                 nonpercpu_bpf_map.update(&map_key, &map_val);
 
@@ -274,7 +280,8 @@ int tc_egress(struct __sk_buff *skb)
 
                 // return bpf_redirect(IFINDEX,BPF_F_INGRESS);
                 //  could find better way to do this. but for now, find ifindex with "ip a" and place in first arg, BPF_F_INGRESS flag specifies redirect to ingress
-                bpf_clone_redirect(skb, IFINDEX, BPF_F_INGRESS);
+                // bpf_clone_redirect(skb, IFINDEX, BPF_F_INGRESS);
+                bpf_redirect(IFINDEX, 0); // I put this instead of cloning, since cloning sends the packet to the XDP ingress again which is wrong
                 // tag the clone, and allow that to pass out to the proxy
                 // must first redo checks
                 void *data_end = (void *)(long)skb->data_end;
@@ -318,6 +325,8 @@ int tc_egress(struct __sk_buff *skb)
                 }
                 if (DEBUG)
                     bpf_trace_printk("new value should be written to packet: 0x%x", ntohs(new_flags_n));
+
+                
                 // return TC_ACT_SHOT;
             } // endif SYN-ACK
 
@@ -364,9 +373,9 @@ int tc_egress(struct __sk_buff *skb)
                 // update map state as needed
                 switch (map_val.map_state)
                 {
-                case ST_ACK_SENT:
-                    map_val.map_state = ST_NOTIFY_PROXY;
-                    nonpercpu_bpf_map.update(&map_key, &map_val);
+                case ST_ACK_SENT: // ST_ACK_SENT was removed effectively from the states SYN_SENT -> NOTIFY_PROXY directly
+                    // map_val.map_state = ST_NOTIFY_PROXY;
+                    // nonpercpu_bpf_map.update(&map_key, &map_val);
                     break;
                 case ST_ONGOING:
                     // if see a FIN packet

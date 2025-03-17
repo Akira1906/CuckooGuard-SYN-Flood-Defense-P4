@@ -54,12 +54,18 @@ tables {
   }
   match_fields {
     id: 8
+    name: "hdr.tcp.flag_psh"
+    bitwidth: 1
+    match_type: TERNARY
+  }
+  match_fields {
+    id: 9
     name: "meta.callback_type"
     bitwidth: 4
     match_type: TERNARY
   }
   match_fields {
-    id: 9
+    id: 10
     name: "meta.cuckoo_check_passed"
     bitwidth: 1
     match_type: TERNARY
@@ -327,6 +333,34 @@ actions {
     alias: "cuckoo_delete"
   }
 }
+actions {
+  preamble {
+    id: 20013317
+    name: "SwitchIngress.cuckoo_insert_kick_success"
+    alias: "cuckoo_insert_kick_success"
+  }
+}
+actions {
+  preamble {
+    id: 33476569
+    name: "SwitchIngress.cuckoo_insert_kick_fail"
+    alias: "cuckoo_insert_kick_fail"
+  }
+}
+actions {
+  preamble {
+    id: 17652825
+    name: "SwitchIngress.debug_write_loop_count"
+    alias: "debug_write_loop_count"
+  }
+}
+actions {
+  preamble {
+    id: 19330473
+    name: "SwitchIngress.debug_write_final_loop_count"
+    alias: "debug_write_final_loop_count"
+  }
+}
 registers {
   preamble {
     id: 373658420
@@ -356,6 +390,36 @@ registers {
     }
   }
   size: 316
+}
+registers {
+  preamble {
+    id: 385514336
+    name: "SwitchIngress.reg_debug"
+    alias: "reg_debug"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 32
+      }
+    }
+  }
+  size: 1
+}
+registers {
+  preamble {
+    id: 375618560
+    name: "SwitchIngress.reg_debug2"
+    alias: "reg_debug2"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 32
+      }
+    }
+  }
+  size: 2
 }
 type_info {
 }
