@@ -203,6 +203,7 @@ int xdp_ingress(struct xdp_md *ctx)
 			bpf_trace_printk("ACK flag 0x%x", tcp->ack);
 			bpf_trace_printk("ECE flag 0x%x", tcp->ece);
 			bpf_trace_printk("TCP CHECKSUM 0x%x", tcp->check);
+			bpf_trace_printk("FIN flag 0x%x", tcp->fin);
 			/*bpf_trace_printk("doff flag 0x%x", tcp->doff);
 			bpf_trace_printk("res1 flag 0x%x", tcp->res1);
 			bpf_trace_printk("cwr flag 0x%x", tcp->cwr);
@@ -306,7 +307,7 @@ int xdp_ingress(struct xdp_md *ctx)
 
 		// connection exists in map
 		else
-		{
+		{ // connection in map
 			if (DEBUG)
 				bpf_trace_printk("INGRESS: Connection exists in map!");
 
@@ -345,6 +346,13 @@ int xdp_ingress(struct xdp_md *ctx)
 				if (!is_tagged)
 				{
 					map_val.map_state = ST_ONGOING;
+					nonpercpu_bpf_map.update(&map_key, &map_val);
+				}
+				break;
+			case ST_WAIT_CLIENT_FIN:
+				if (tcp->fin == 1)
+				{
+					map_val.map_state = ST_WAIT_SERVER_FINALACK;
 					nonpercpu_bpf_map.update(&map_key, &map_val);
 				}
 				break;

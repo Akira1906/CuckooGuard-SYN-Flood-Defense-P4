@@ -131,10 +131,13 @@ int tc_egress(struct __sk_buff *skb)
         tcp = data + sizeof(*eth) + sizeof(*ip);
         if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
         {
-            if (DEBUG)
-                bpf_trace_printk("Dropping TCP packet");
+            if (DEBUG) bpf_trace_printk("Dropping TCP packet");
             goto DROP;
         }
+        uint8_t fin_flag; // this is dirty but works, is memory safe
+        fin_flag = tcp->fin;
+        uint8_t ack_flag; // alternatively use int
+        ack_flag = tcp->ack;
 
         pkt.src_port = tcp->source;
         pkt.dst_port = tcp->dest;
@@ -161,9 +164,9 @@ int tc_egress(struct __sk_buff *skb)
             if (DEBUG)
                 bpf_trace_printk("EGRESS: connection does NOT exist");
             return TC_ACT_OK;
-        } // connection exists in map
-        else
-        {
+        } 
+        else // connection exists in map
+        { 
             if (DEBUG)
                 bpf_trace_printk("EGRESS: Connection exists in map!");
 
@@ -226,8 +229,6 @@ int tc_egress(struct __sk_buff *skb)
                 old_ack_seq = ntohl(tcp->ack_seq);
                 tcp->ack_seq = htonl(ntohl(tcp->seq) + 0x1);
                 tcp->seq = htonl(old_ack_seq);
-
-                
 
                 // ip->id = htons(map_val.ip_id + 0x1);
                 // bpf_trace_printk("NEW ID 0x%x", ntohs(ip->id));
@@ -326,12 +327,11 @@ int tc_egress(struct __sk_buff *skb)
                 if (DEBUG)
                     bpf_trace_printk("new value should be written to packet: 0x%x", ntohs(new_flags_n));
 
-                
                 // return TC_ACT_SHOT;
             } // endif SYN-ACK
 
             else
-            {
+            { // if not SYN-ACK
                 // lower 4 bits give size of field being updated, leave mask
                 uint8_t cksum_flags = BPF_F_PSEUDO_HDR; // 0x10
 
@@ -378,9 +378,21 @@ int tc_egress(struct __sk_buff *skb)
                     // nonpercpu_bpf_map.update(&map_key, &map_val);
                     break;
                 case ST_ONGOING:
+                    if (fin_flag == 1 && ack_flag == 0x1)
+                    {
+                        map_val.map_state = ST_WAIT_CLIENT_FIN;
+                        nonpercpu_bpf_map.update(&map_key, &map_val);
+                    }
                     // if see a FIN packet
                     // map_val.map_state = ST_CLOSED;
                     // nonpercpu_bpf_map.update(&map_key, &map_val);
+                    break;
+                case ST_WAIT_SERVER_FINALACK:
+                    if (ack_flag == 0x1)
+                    {
+                        map_val.map_state = ST_CLOSED;
+                        nonpercpu_bpf_map.update(&map_key, &map_val);
+                    }
                     break;
                 default:
                     break;
