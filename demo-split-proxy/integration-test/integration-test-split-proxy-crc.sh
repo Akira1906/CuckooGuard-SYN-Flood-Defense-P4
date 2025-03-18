@@ -55,11 +55,11 @@ BPFIFACE='server-eth0' # This needs to be set manually, mininet will automatical
 echo "Loading new TC program on $BPFIFACE..."
 sudo /bin/python3 ../implementation/ebpf/tc_load.py $MN_SERVER_NS $BPFIFACE 2 &
 
-sleep 2
-sudo ip netns exec $MN_SERVER_NS tc qdisc show dev server-eth0
-sudo ip netns exec $MN_SERVER_NS tc filter show dev server-eth0
+# sleep 2
+# sudo ip netns exec $MN_SERVER_NS tc qdisc show dev server-eth0
+# sudo ip netns exec $MN_SERVER_NS tc filter show dev server-eth0
 
-echo "+++++=========++++++++++"
+# echo "+++++=========++++++++++"
 
 
 sleep 1
@@ -67,7 +67,8 @@ sleep 1
 echo "Loading new XDP program on $BPFIFACE..."
 sudo /bin/python3 ../implementation/ebpf/xdp_load.py $MN_SERVER_NS $BPFIFACE XDP_FLAGS_SKB_MODE &
 
-sleep 30
+echo "Testing..."
+sleep 15
 
 LOG_FILE="log/server_scheduler.log"
 SEARCH_STRING='"GET / HTTP/1.1" 200'

@@ -22,7 +22,9 @@
 #define ST_ACK_SENT 2
 #define ST_NOTIFY_PROXY 3
 #define ST_ONGOING 4
-#define ST_CLOSED 5
+#define ST_WAIT_CLIENT_FIN 5
+#define ST_WAIT_SERVER_FINALACK 6
+#define ST_CLOSED 7
 #define POSITIVE_DELTA 0x1 
 #define NEGATIVE_DELTA 0x2
 #define TRUE 0x1 
