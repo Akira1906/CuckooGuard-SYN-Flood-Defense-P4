@@ -184,7 +184,7 @@ int xdp_ingress(struct xdp_md *ctx)
 	{
 
 		if (DEBUG)
-			bpf_trace_printk("XDP_INGRESS: packet is TCP: src_ip 0x%x, dst_ip 0x%x", pkt.src_ip, pkt.dst_ip);
+			bpf_trace_printk("START XDP_INGRESS: packet is TCP: src_ip 0x%x, dst_ip 0x%x", pkt.src_ip, pkt.dst_ip);
 		struct tcphdr *tcp = NULL;
 		tcp = data + sizeof(*eth) + sizeof(*ip);
 		if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
@@ -198,12 +198,13 @@ int xdp_ingress(struct xdp_md *ctx)
 		pkt.ack = tcp->ack_seq;
 		if (DEBUG)
 		{
-			bpf_trace_printk("src_ip 0x%x, orig src_ip 0x%x", pkt.src_ip, ip->saddr);
+			// bpf_trace_printk("src_ip 0x%x, orig src_ip 0x%x", pkt.src_ip, ip->saddr);
+
 			bpf_trace_printk("SYN flag 0x%x", tcp->syn);
 			bpf_trace_printk("ACK flag 0x%x", tcp->ack);
 			bpf_trace_printk("ECE flag 0x%x", tcp->ece);
-			bpf_trace_printk("TCP CHECKSUM 0x%x", tcp->check);
 			bpf_trace_printk("FIN flag 0x%x", tcp->fin);
+			bpf_trace_printk("TCP CHECKSUM 0x%x", tcp->check);
 			/*bpf_trace_printk("doff flag 0x%x", tcp->doff);
 			bpf_trace_printk("res1 flag 0x%x", tcp->res1);
 			bpf_trace_printk("cwr flag 0x%x", tcp->cwr);

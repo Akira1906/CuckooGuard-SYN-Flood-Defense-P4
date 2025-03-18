@@ -119,12 +119,13 @@ class UnitTest(DemoTumTest):
         self.tcp_handshake()
         self.valid_packet_sequence()
         self.malicious_packets()
+        self.test_time_decay_bloom(decay_period=10)
         
 
 
     def test_insertion_bloom(self):
         
-        client_port = self.client_port -1
+        client_port = self.client_port - 2
         
         # Step 1: trigger insertion into Bloom Filter
 
@@ -159,6 +160,59 @@ class UnitTest(DemoTumTest):
         )
         
         tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+    
+    def test_time_decay_bloom(self, decay_period = 10):
+        
+        client_port = self.client_port + 2
+        
+        # Step 1: trigger insertion into Bloom Filter
+
+        print("\n[INFO] Testing Bloom Filter Time Decay Mechanism...")
+
+        # packet from ebpf to P4 signaling to add the connection to the Bloomfilter
+        
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port, flags="E", seq=1, ack=38, window=502)
+        )
+        
+        tu.send_packet(self,self.ebpf_iface, ack_pkt)
+        
+        # Step 4: try to send legitimate TCP packet through P4 check if it gets through, if yes Bloom Filter operation was successfull
+        
+        tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
+        ack_pkt = (
+            Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+            Raw(load=tcp_load)
+        )
+        tu.send_packet(self, self.client_iface, ack_pkt)
+        
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+            Raw(load=tcp_load)
+        )
+        
+        tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+        
+        # wait for 30 seconds so both bloom filters will expire
+        
+        sleep(3 * decay_period)
+        
+        ack_pkt = (
+            Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
+            IP(src=self.client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+            Raw(load=tcp_load)
+        )
+        tu.send_packet(self, self.client_iface, ack_pkt)
+        
+        tu.verify_no_packet(self, ack_pkt, 3)
+        
         
 
     def tcp_failed_handshake_outdated_cookie(self):
@@ -188,7 +242,7 @@ class UnitTest(DemoTumTest):
         
         sleep(10)
         
-        # Step 3: Correct ACK answer from the client
+        # Step 3: Correct ACK answer from the client, but too late
         
         ack_pkt = (
             Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /

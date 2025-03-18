@@ -1,11 +1,12 @@
 from p4utils.utils.sswitch_p4runtime_API import SimpleSwitchP4RuntimeAPI
 from p4utils.utils.helper import load_topo
+from p4utils.utils.sswitch_thrift_API import SimpleSwitchThriftAPI
 from time import sleep
 import os
 import argparse
 
 
-class DigestController():
+class P4RuntimeController():
 
     def __init__(self, p4rt_path="p4src/split-proxy-crc.p4info.txtpb"):
 
@@ -13,7 +14,8 @@ class DigestController():
         p4rt_path = os.path.join(script_dir, p4rt_path)
         json_path = "p4src/split-proxy-crc.json"
         json_path = os.path.join(script_dir, json_path)
-        self.topo = load_topo(os.path.join(script_dir, "../integration-test/topology.json"))
+        self.topo = load_topo(os.path.join(
+            script_dir, "../integration-test/topology.json"))
         # print(f"p4rt_path : {p4rt_path}")
         # print(f"script_dir: {script_dir}")
         self.ss = SimpleSwitchP4RuntimeAPI(
@@ -23,9 +25,22 @@ class DigestController():
             json_path=json_path
         )
 
-        self.configure_tables()
+        self.configureTables()
+    #     self.controlLoop()
 
-    def configure_tables(self):
+    # def controlLoop(self):
+    #     delete_bloom_id = 1
+    #     # for now it should manage the time-decaying bloom filter to support automatic expiration of elements
+    #     # control plane can communicate to P4 by altering table entries
+    #     # idea: add a new table to P4 part with the purpose to reset and switch Bloom Filters
+    #     while(True):
+    #         sleep(10)
+    #         self.ss.table_delete_match('tb_bloom_time_decay', 'bloom_time_decay', [str((delete_bloom_id + 1) % 2)])
+    #         self.ss.table_add('tb_bloom_time_decay', 'bloom_time_decay', [str(delete_bloom_id)], [])
+            
+    #         delete_bloom_id = (delete_bloom_id + 1) % 2
+
+    def configureTables(self):
         """Configures the necessary table entries in the P4 switch."""
 
         CALLBACK_TYPE_SYNACK = 1
@@ -48,34 +63,48 @@ class DigestController():
                           ["0", "1", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
         self.ss.table_add("tb_triage_pkt_types_nextstep", "non_tcp_traffic",
                           ["0", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "0&&&0"], [], prio=10)
-        # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_tagack",
-        #                   ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
-        # self.ss.table_add("tb_triage_pkt_types_nextstep", "pre_finalize_synack",
-        #                   ["8", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "1", "0&&&0"], [], prio=10)
-        # self.ss.table_add("tb_triage_pkt_types_nextstep", "finalize_tagack",
-        #                   ["12", "1", "0", "0&&&0", "0&&&0", "0&&&0", "0&&&0", "2", "0&&&0"], [], prio=10)
 
         self.ss.table_add("tb_decide_output_type", "craft_synack_reply",
                           ["1", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
         self.ss.table_add("tb_decide_output_type", "verify_ack",
                           ["1", str(CALLBACK_TYPE_TAGACK)], [], prio=10)
-        # self.ss.table_add("tb_decide_output_type_1", "clean_up",
-        #                   ["1", "1", "0&&&0"], [], prio=10)
 
-        # self.ss.table_add("tb_decide_output_type_2", "sip_final_xor_with_time",
-        #                   ["1", "1", "12", str(CALLBACK_TYPE_SYNACK)], [], prio=10)
-        # self.ss.table_add("tb_decide_output_type_2", "verify_timediff",
-        #                   ["1", "1", "12", str(CALLBACK_TYPE_TAGACK)], [], prio=10)
         
+        # self.ss.table_add('tb_bloom_time_decay', 'bloom_time_decay', ["1"], [])
+
         for neigh in self.topo.get_neighbors('s1'):
             if self.topo.isHost(neigh):
                 self.ss.table_add('tb_ipv4_lpm',
-                                    'ipv4_forward',
-                                    [self.topo.get_host_ip(neigh)],
-                                    [self.topo.node_to_node_mac(neigh, 's1'), str(self.topo.node_to_node_port_num('s1', neigh))])
+                                  'ipv4_forward',
+                                  [self.topo.get_host_ip(neigh)],
+                                  [self.topo.node_to_node_mac(neigh, 's1'), str(self.topo.node_to_node_port_num('s1', neigh))])
 
         print("Table entries configured successfully!")
+        
 
+class ThriftController():
+    
+    def __init__(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        json_path = "p4src/split-proxy-crc.json"
+        json_path = os.path.join(script_dir, json_path)
+        
+        self.ss = SimpleSwitchThriftAPI(thrift_port=9090, json_path = json_path)
+        
+        self.periodicRegisterReset()
+        
+    def periodicRegisterReset(self):
+        delete_bloom_id = 1
+        # for now it should manage the time-decaying bloom filter to support automatic expiration of elements
+        # control plane can communicate to P4 by altering table entries
+        # idea: add a new table to P4 part with the purpose to reset and switch Bloom Filters
+        while(True):
+            sleep(10)
+            print(f"Reset Bloom Register: reg_bloom_{delete_bloom_id}_*")
+            self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_1")
+            self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_2")
+            
+            delete_bloom_id = (delete_bloom_id + 1) % 2
 
 def main():
 
@@ -98,9 +127,13 @@ def main():
         sleep(delay)
     p4rt_path = args.p4rt
     if p4rt_path:
-        DigestController(p4rt_path)
+        P4RuntimeController(p4rt_path)
     else:
-        DigestController()
+        P4RuntimeController()
+    
+    ThriftController()
+        
+    
 
 
 if __name__ == "__main__":

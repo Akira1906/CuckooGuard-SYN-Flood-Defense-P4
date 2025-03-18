@@ -105,7 +105,7 @@ struct metadata_t {
     // new introduced metadata
     bit<32> bloom_hash_1;
     bit<32> bloom_hash_2;
-
+    // bit<1> active_bloom_filter;
     bit<1> bloom_read_passed;
     
 
@@ -274,16 +274,23 @@ control SwitchIngress(
         reg_timedelta.write((bit<32>) 0, meta.cookie_time);
     }
     
-    // bloom filter for flows
-    register<bit<1>>(32w4096) reg_bloom_1;
-    register<bit<1>>(32w4096) reg_bloom_2;
+    // Bloom Filter for flows
+    // Bloom Filter #0
+    register<bit<1>>(32w4096) reg_bloom_0_1;
+    register<bit<1>>(32w4096) reg_bloom_0_2;
+
+    // Bloom Filter #1
+    register<bit<1>>(32w4096) reg_bloom_1_1;
+    register<bit<1>>(32w4096) reg_bloom_1_2;
+
 
     action set_bloom_1_a(){
         hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
         
-        reg_bloom_1.write(meta.bloom_hash_1, (bit<1>) 1);
+        reg_bloom_0_1.write(meta.bloom_hash_1, (bit<1>) 1);
+        reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) 1);
     }
 
     action set_bloom_2_a(){
@@ -291,7 +298,8 @@ control SwitchIngress(
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
 
-        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
+        reg_bloom_0_2.write(meta.bloom_hash_2, (bit<1>) 1);
+        reg_bloom_1_2.write(meta.bloom_hash_2, (bit<1>) 1);
     }
 
     action get_bloom_1_a(){
@@ -299,14 +307,22 @@ control SwitchIngress(
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
 
-        reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+        reg_bloom_0_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+
+        if (meta.bloom_read_1 == 0) {
+            reg_bloom_1_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+        }
     }
 
     action get_bloom_2_a(){
         hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4095);
-        reg_bloom_2.read(meta.bloom_read_2, meta.bloom_hash_2);
+        reg_bloom_0_2.read(meta.bloom_read_2, meta.bloom_hash_2);
+
+        if (meta.bloom_read_2 == 0) {
+            reg_bloom_1_2.read(meta.bloom_read_2, meta.bloom_hash_2);
+        }
     }
 
 
@@ -511,6 +527,39 @@ control SwitchIngress(
         meta.tcp_len = tcpLength;
     }
 
+    // register< bit<1> >(1) reg_active_bloom_filter;
+
+    // action bloom_time_decay () {
+    //     // this action deletes the currently active Bloom Filter and sets the other one as active
+
+    //     if(meta.active_bloom_filter == 1){
+    //         // somehow there is not function to delete, idea: for every packet that passes through delete one entry if necessary
+    //         //wipe reg_bloom_1_1
+    //         //wipe reg_bloom_1_2
+    //     }
+    //     else
+    //     {
+    //         //wipe reg_bloom_0_1
+    //         //wipe reg_bloom_0_2
+    //     }
+    //     meta.active_bloom_filter = meta.active_bloom_filter ^ 1;
+    // }
+
+    //     table tb_bloom_time_decay {
+    //     key = {
+    //         meta.active_bloom_filter: exact; // either 0 or 1
+    //     }
+    //     actions = {
+    //         bloom_time_decay;
+    //         NoAction;
+    //     }
+    //     default_action = NoAction;
+    //     size = 16;
+    //     // const entries={
+    //     // Case 1: (1): bloom_time_decay() // these entries will alternate every xx seconds
+    //     // Case 2: (0): bloom_time_decay()
+    //     // }
+    // }
 
     apply {
 
@@ -525,7 +574,9 @@ control SwitchIngress(
             timedelta_step3_read();
         }
 
-        // Bloomfilter set and get
+        // Check if Bloom Filter time-decaying mechanism has to run
+
+        // Bloom Filter set and get
         
         if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
             set_bloom_1_a();

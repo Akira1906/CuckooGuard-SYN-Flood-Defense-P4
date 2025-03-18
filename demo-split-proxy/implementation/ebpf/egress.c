@@ -29,6 +29,10 @@
 #define DEBUG 1
 #endif
 
+#ifndef RUNS_IN_MININET
+#define RUNS_IN_MININET=0
+#endif
+
 #include <linux/in.h>
 #include <uapi/linux/bpf.h>
 #include <linux/ip.h>
@@ -231,6 +235,7 @@ int tc_egress(struct __sk_buff *skb)
                 tcp->ack_seq = htonl(ntohl(tcp->seq) + 0x1);
                 tcp->seq = htonl(old_ack_seq);
 
+
                 // ip->id = htons(map_val.ip_id + 0x1);
                 // bpf_trace_printk("NEW ID 0x%x", ntohs(ip->id));
 
@@ -282,8 +287,18 @@ int tc_egress(struct __sk_buff *skb)
 
                 // return bpf_redirect(IFINDEX,BPF_F_INGRESS);
                 //  could find better way to do this. but for now, find ifindex with "ip a" and place in first arg, BPF_F_INGRESS flag specifies redirect to ingress
-                // bpf_clone_redirect(skb, IFINDEX, BPF_F_INGRESS);
-                bpf_redirect(IFINDEX, 0); // I put this instead of cloning, since cloning sends the packet to the XDP ingress again which is wrong
+
+                if (RUNS_IN_MININET){
+                    bpf_redirect(IFINDEX, 0); // I put this instead of cloning, since cloning sends the packet to the XDP ingress again which is wrong
+                }
+                else{
+                    bpf_clone_redirect(skb, IFINDEX, BPF_F_INGRESS); // right now this works with the unit test somehow
+                }
+
+
+                
+
+
                 // tag the clone, and allow that to pass out to the proxy
                 // must first redo checks
                 void *data_end = (void *)(long)skb->data_end;

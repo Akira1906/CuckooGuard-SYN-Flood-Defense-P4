@@ -9,7 +9,7 @@ from ctypes import CDLL  # Import CDLL for namespace switching
 import os
 from tc_helper import get_ifindex
 
-def main(namespace, device, IFINDEX = None):
+def main(namespace, device, IFINDEX = None, RUNS_IN_MININET = 0):
     # Define the namespace switching constant
     CLONE_NEWNET = 0x40000000
     libc = CDLL("libc.so.6")  # Load the C standard library
@@ -47,7 +47,8 @@ def main(namespace, device, IFINDEX = None):
         device=offload_device,
         cflags=['-Ofast', '-I' + os.path.join(script_dir, 'include'),
                 f'-DDEBUG={DEBUG_MODE}',
-                f'-DIFINDEX={IFINDEX}'
+                f'-DIFINDEX={IFINDEX}',
+                f'-DRUNS_IN_MININET={RUNS_IN_MININET}'
             ]
     )
     fn = b.load_func("tc_egress", mode, offload_device)
@@ -89,4 +90,9 @@ if __name__ == "__main__":
         IFINDEX = sys.argv[3]
         main(namespace, device, IFINDEX)
     else:
-        main(namespace, device)
+        if len(sys.argv) == 5:
+            RUNS_IN_MININET = sys.argv[4]
+            IFINDEX = sys.argv[3]
+            main(namespace, device, IFINDEX, RUNS_IN_MININET)
+        else:
+            main(namespace, device)

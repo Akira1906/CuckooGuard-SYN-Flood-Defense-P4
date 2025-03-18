@@ -53,7 +53,7 @@ BPFIFACE='server-eth0' # This needs to be set manually, mininet will automatical
 # sudo ip netns exec $MN_SERVER_NS tc qdisc del dev $BPFIFACE clsact
 
 echo "Loading new TC program on $BPFIFACE..."
-sudo /bin/python3 ../implementation/ebpf/tc_load.py $MN_SERVER_NS $BPFIFACE 2 &
+sudo /bin/python3 ../implementation/ebpf/tc_load.py $MN_SERVER_NS $BPFIFACE 2 1 &
 
 # sleep 2
 # sudo ip netns exec $MN_SERVER_NS tc qdisc show dev server-eth0
