@@ -131,7 +131,8 @@ int tc_egress(struct __sk_buff *skb)
         tcp = data + sizeof(*eth) + sizeof(*ip);
         if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
         {
-            if (DEBUG) bpf_trace_printk("Dropping TCP packet");
+            if (DEBUG)
+                bpf_trace_printk("Dropping TCP packet");
             goto DROP;
         }
         uint8_t fin_flag; // this is dirty but works, is memory safe
@@ -164,9 +165,9 @@ int tc_egress(struct __sk_buff *skb)
             if (DEBUG)
                 bpf_trace_printk("EGRESS: connection does NOT exist");
             return TC_ACT_OK;
-        } 
+        }
         else // connection exists in map
-        { 
+        {
             if (DEBUG)
                 bpf_trace_printk("EGRESS: Connection exists in map!");
 
@@ -330,8 +331,8 @@ int tc_egress(struct __sk_buff *skb)
                 // return TC_ACT_SHOT;
             } // endif SYN-ACK
 
-            else
-            { // if not SYN-ACK
+            else // if not SYN-ACK
+            {
                 // lower 4 bits give size of field being updated, leave mask
                 uint8_t cksum_flags = BPF_F_PSEUDO_HDR; // 0x10
 
@@ -347,6 +348,48 @@ int tc_egress(struct __sk_buff *skb)
                 if (DEBUG)
                     bpf_trace_printk("old seq value is 0x%x", htonl(old_seq_n));
                 uint32_t new_seq_n = htonl(ntohl(tcp->seq) + map_val.delta);
+
+                // update state and flags if needed
+
+                // update map state as needed
+                switch (map_val.map_state)
+                {
+                case ST_ACK_SENT: // ST_ACK_SENT was removed effectively from the states SYN_SENT -> NOTIFY_PROXY directly
+                    // map_val.map_state = ST_NOTIFY_PROXY;
+                    // nonpercpu_bpf_map.update(&map_key, &map_val);
+                    break;
+                case ST_ONGOING:
+                    if (fin_flag == 1 && ack_flag == 0x1)
+                    {
+                        map_val.map_state = ST_WAIT_CLIENT_FIN;
+                        nonpercpu_bpf_map.update(&map_key, &map_val);
+                    }
+                    // if see a FIN packet
+                    // map_val.map_state = ST_CLOSED;
+                    // nonpercpu_bpf_map.update(&map_key, &map_val);
+                    break;
+                case ST_WAIT_SERVER_FINALACK:
+                    if (ack_flag == 0x1)
+                    {
+                        map_val.map_state = ST_CLOSED; // maybe delete connection instead?
+                        nonpercpu_bpf_map.update(&map_key, &map_val);
+                        // incremental checksum update on changed flags
+                        uint16_t *casted_ptr = (uint16_t *)tcp;
+                        uint16_t old_flags_n = casted_ptr[6];
+                        // set flags (do we need to reset any other flags?)
+                        tcp->ece = 1;
+                        tcp->urg = 1;
+                        uint16_t new_flags_n = casted_ptr[6];
+                        // incremental checksum update
+                        tcp->check = compute_incr_tcp_checksum(tcp->check, old_flags_n, new_flags_n);
+
+                    }
+                    break;
+                default:
+                    break;
+                }
+                if (DEBUG)
+                    bpf_trace_printk("EGRESS UPDATED map_state: %d", map_val.map_state);
 
                 // try updating checksum with bpf helper
                 if (DEBUG)
@@ -369,36 +412,6 @@ int tc_egress(struct __sk_buff *skb)
                 }
                 if (DEBUG)
                     bpf_trace_printk("new value should be written to packet: 0x%x", htonl(new_seq_n));
-
-                // update map state as needed
-                switch (map_val.map_state)
-                {
-                case ST_ACK_SENT: // ST_ACK_SENT was removed effectively from the states SYN_SENT -> NOTIFY_PROXY directly
-                    // map_val.map_state = ST_NOTIFY_PROXY;
-                    // nonpercpu_bpf_map.update(&map_key, &map_val);
-                    break;
-                case ST_ONGOING:
-                    if (fin_flag == 1 && ack_flag == 0x1)
-                    {
-                        map_val.map_state = ST_WAIT_CLIENT_FIN;
-                        nonpercpu_bpf_map.update(&map_key, &map_val);
-                    }
-                    // if see a FIN packet
-                    // map_val.map_state = ST_CLOSED;
-                    // nonpercpu_bpf_map.update(&map_key, &map_val);
-                    break;
-                case ST_WAIT_SERVER_FINALACK:
-                    if (ack_flag == 0x1)
-                    {
-                        map_val.map_state = ST_CLOSED;
-                        nonpercpu_bpf_map.update(&map_key, &map_val);
-                    }
-                    break;
-                default:
-                    break;
-                }
-                if (DEBUG)
-                    bpf_trace_printk("EGRESS UPDATED map_state: %d", map_val.map_state);
 
             } // end else non-SYN-ACK packets
 

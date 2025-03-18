@@ -741,6 +741,15 @@ control SwitchIngress(
     }
 
     action cuckoo_delete() {
+        // first: swap src, dst addr and port
+        bit<32> temp_ip = hdr.ipv4.src_addr;
+        hdr.ipv4.src_addr = hdr.ipv4.dst_addr;
+        hdr.ipv4.dst_addr = temp_ip;
+
+        bit<16> temp_port = hdr.tcp.src_port;
+        hdr.tcp.src_port = hdr.tcp.dst_port;
+        hdr.tcp.dst_port = temp_port;
+
         cuckoo_calc_fingerprint();
         cuckoo_calc_index_pair();
 
@@ -751,6 +760,13 @@ control SwitchIngress(
         if (meta.cuckoo_delete_success == 0){
             cuckoo_bucket_delete(meta.cuckoo_index2);
         }
+
+        // swap it back
+        hdr.ipv4.dst_addr = hdr.ipv4.src_addr;
+        hdr.ipv4.src_addr = temp_ip;
+
+        hdr.tcp.dst_port = hdr.tcp.src_port;
+        hdr.tcp.src_port = temp_port;
     }
 
     action cuckoo_insert_kick_success(){
@@ -799,6 +815,9 @@ control SwitchIngress(
         if (hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece == 1 && meta.cuckoo_loop_count == 0){
             if(hdr.tcp.flag_urg == 1){
                 cuckoo_delete();
+                // set the flags back to normal so ACK packet can reach client
+                hdr.tcp.flag_urg = 0;
+                hdr.tcp.flag_ece = 0;
             }
             else{
                 cuckoo_insert_init(); // sets loop_count to 1 if no place found yet

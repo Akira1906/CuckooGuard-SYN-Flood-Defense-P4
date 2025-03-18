@@ -95,6 +95,8 @@
         ["curr_fingerprint_1", 10, false],
         ["curr_fingerprint_2", 10, false],
         ["delete_pos_0", 2, false],
+        ["temp_ip_0", 32, false],
+        ["temp_port_0", 16, false],
         ["metadata_t._tcp_valid0", 1, false],
         ["metadata_t._udp_payload_valid1", 1, false],
         ["metadata_t._cuckoo_valid2", 1, false],
@@ -524,7 +526,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 960,
+        "line" : 979,
         "column" : 8,
         "source_fragment" : "SwitchEgressDeparser"
       },
@@ -564,7 +566,7 @@
       "id" : 2,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 764,
+        "line" : 780,
         "column" : 27,
         "source_fragment" : "reg_debug"
       },
@@ -576,7 +578,7 @@
       "id" : 3,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 765,
+        "line" : 781,
         "column" : 27,
         "source_fragment" : "reg_debug2"
       },
@@ -826,7 +828,7 @@
       "id" : 12,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 911,
+        "line" : 930,
         "column" : 1,
         "source_fragment" : "update_checksum( ..."
       },
@@ -883,7 +885,7 @@
       "id" : 13,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 927,
+        "line" : 946,
         "column" : 8,
         "source_fragment" : "update_checksum_with_payload( ..."
       },
@@ -7922,6 +7924,120 @@
           "parameters" : [
             {
               "type" : "field",
+              "value" : ["scalars", "temp_ip_0"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "src_addr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 745,
+            "column" : 8,
+            "source_fragment" : "bit<32> temp_ip = hdr.ipv4.src_addr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "src_addr"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dst_addr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 746,
+            "column" : 8,
+            "source_fragment" : "hdr.ipv4.src_addr = hdr.ipv4.dst_addr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dst_addr"]
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "temp_ip_0"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 747,
+            "column" : 8,
+            "source_fragment" : "hdr.ipv4.dst_addr = temp_ip"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "temp_port_0"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "src_port"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 749,
+            "column" : 8,
+            "source_fragment" : "bit<16> temp_port = hdr.tcp.src_port"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["tcp", "src_port"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "dst_port"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 750,
+            "column" : 8,
+            "source_fragment" : "hdr.tcp.src_port = hdr.tcp.dst_port"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["tcp", "dst_port"]
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "temp_port_0"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 751,
+            "column" : 8,
+            "source_fragment" : "hdr.tcp.dst_port = temp_port"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
               "value" : ["scalars", "tmp_55"]
             },
             {
@@ -7945,7 +8061,7 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "dst_addr"]
+              "value" : ["scalars", "temp_ip_0"]
             }
           ],
           "source_info" : {
@@ -7983,7 +8099,7 @@
             },
             {
               "type" : "field",
-              "value" : ["tcp", "dst_port"]
+              "value" : ["scalars", "temp_port_0"]
             }
           ],
           "source_info" : {
@@ -8132,7 +8248,7 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "dst_addr"]
+              "value" : ["scalars", "temp_ip_0"]
             }
           ],
           "source_info" : {
@@ -8170,7 +8286,7 @@
             },
             {
               "type" : "field",
-              "value" : ["tcp", "dst_port"]
+              "value" : ["scalars", "temp_port_0"]
             }
           ],
           "source_info" : {
@@ -8363,7 +8479,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x11"
+              "value" : "0x17"
             }
           ]
         },
@@ -8587,7 +8703,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x19"
+              "value" : "0x1f"
             }
           ]
         },
@@ -8760,7 +8876,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x1d"
+              "value" : "0x23"
             }
           ]
         },
@@ -8933,7 +9049,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x21"
+              "value" : "0x27"
             }
           ]
         },
@@ -9106,7 +9222,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x25"
+              "value" : "0x2b"
             }
           ]
         },
@@ -9228,7 +9344,7 @@
           "op" : "_jump_if_zero",
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 751,
+            "line" : 760,
             "column" : 8,
             "source_fragment" : "if"
           },
@@ -9259,7 +9375,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x39"
+              "value" : "0x3f"
             }
           ]
         },
@@ -9412,7 +9528,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x2d"
+              "value" : "0x33"
             }
           ]
         },
@@ -9585,7 +9701,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x31"
+              "value" : "0x37"
             }
           ]
         },
@@ -9758,7 +9874,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x35"
+              "value" : "0x3b"
             }
           ]
         },
@@ -9931,7 +10047,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x39"
+              "value" : "0x3f"
             }
           ]
         },
@@ -10048,6 +10164,82 @@
             "column" : 12,
             "source_fragment" : "reg_cuckoo.write((bit<32>) entry_index, (cuckoo_fingerprint_t) 0)"
           }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dst_addr"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "src_addr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 765,
+            "column" : 8,
+            "source_fragment" : "hdr.ipv4.dst_addr = hdr.ipv4.src_addr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "src_addr"]
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "temp_ip_0"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 766,
+            "column" : 8,
+            "source_fragment" : "hdr.ipv4.src_addr = temp_ip"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["tcp", "dst_port"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "src_port"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 768,
+            "column" : 8,
+            "source_fragment" : "hdr.tcp.dst_port = hdr.tcp.src_port"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["tcp", "src_port"]
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "temp_port_0"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 769,
+            "column" : 8,
+            "source_fragment" : "hdr.tcp.src_port = temp_port"
+          }
         }
       ]
     },
@@ -10095,7 +10287,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 768,
+            "line" : 784,
             "column" : 37,
             "source_fragment" : "(bit<32>) meta.cuckoo_loop_count"
           }
@@ -10118,7 +10310,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 768,
+            "line" : 784,
             "column" : 8,
             "source_fragment" : "reg_debug.write((bit<32>) 0, (bit<32>) meta.cuckoo_loop_count)"
           }
@@ -10157,7 +10349,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 772,
+            "line" : 788,
             "column" : 38,
             "source_fragment" : "(bit<32>) meta.cuckoo_loop_count"
           }
@@ -10180,7 +10372,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 772,
+            "line" : 788,
             "column" : 8,
             "source_fragment" : "reg_debug2.write((bit<32>) 0, (bit<32>) meta.cuckoo_loop_count)"
           }
@@ -10212,7 +10404,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 773,
+            "line" : 789,
             "column" : 38,
             "source_fragment" : "(bit<32>) hdr.tcp.src_port"
           }
@@ -10235,7 +10427,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 773,
+            "line" : 789,
             "column" : 8,
             "source_fragment" : "reg_debug2.write((bit<32>) 1, (bit<32>) hdr.tcp.src_port)"
           }
@@ -10243,8 +10435,53 @@
       ]
     },
     {
-      "name" : "splitproxycuckoo830",
+      "name" : "splitproxycuckoo819",
       "id" : 34,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["tcp", "flag_urg"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00"
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 819,
+            "column" : 16,
+            "source_fragment" : "hdr.tcp.flag_urg = 0"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["tcp", "flag_ece"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00"
+            }
+          ],
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 820,
+            "column" : 16,
+            "source_fragment" : "hdr.tcp.flag_ece = 0"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "splitproxycuckoo849",
+      "id" : 35,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -10257,7 +10494,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 830,
+            "line" : 849,
             "column" : 16,
             "source_fragment" : "resubmit_preserving_field_list(1)"
           }
@@ -10265,8 +10502,8 @@
       ]
     },
     {
-      "name" : "splitproxycuckoo847",
-      "id" : 35,
+      "name" : "splitproxycuckoo866",
+      "id" : 36,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -10283,7 +10520,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 847,
+            "line" : 866,
             "column" : 12,
             "source_fragment" : "meta.ingress_is_server_port = 1"
           }
@@ -10291,8 +10528,8 @@
       ]
     },
     {
-      "name" : "splitproxycuckoo849",
-      "id" : 36,
+      "name" : "splitproxycuckoo868",
+      "id" : 37,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -10309,7 +10546,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 849,
+            "line" : 868,
             "column" : 12,
             "source_fragment" : "meta.ingress_is_server_port = 0"
           }
@@ -10317,8 +10554,8 @@
       ]
     },
     {
-      "name" : "splitproxycuckoo858",
-      "id" : 37,
+      "name" : "splitproxycuckoo877",
+      "id" : 38,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -10358,7 +10595,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 858,
+            "line" : 877,
             "column" : 12,
             "source_fragment" : "meta.incoming_ack_minus_1 = hdr.tcp.ack_no - 1"
           }
@@ -10400,7 +10637,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 859,
+            "line" : 878,
             "column" : 12,
             "source_fragment" : "meta.incoming_seq_plus_1 = hdr.tcp.seq_no + 1"
           }
@@ -10408,8 +10645,8 @@
       ]
     },
     {
-      "name" : "splitproxycuckoo867",
-      "id" : 38,
+      "name" : "splitproxycuckoo886",
+      "id" : 39,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -10426,7 +10663,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 867,
+            "line" : 886,
             "column" : 20,
             "source_fragment" : "meta.ack_verify_timediff_exceeded_limit=0"
           }
@@ -10434,8 +10671,8 @@
       ]
     },
     {
-      "name" : "splitproxycuckoo869",
-      "id" : 39,
+      "name" : "splitproxycuckoo888",
+      "id" : 40,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -10452,7 +10689,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 869,
+            "line" : 888,
             "column" : 20,
             "source_fragment" : "meta.ack_verify_timediff_exceeded_limit=1"
           }
@@ -10467,7 +10704,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 870,
+            "line" : 889,
             "column" : 20,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -10475,8 +10712,8 @@
       ]
     },
     {
-      "name" : "splitproxycuckoo878",
-      "id" : 40,
+      "name" : "splitproxycuckoo897",
+      "id" : 41,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -10493,7 +10730,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 878,
+            "line" : 897,
             "column" : 16,
             "source_fragment" : "hdr.ipv4.ihl=5"
           }
@@ -10512,7 +10749,7 @@
           ],
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 879,
+            "line" : 898,
             "column" : 16,
             "source_fragment" : "hdr.ipv4.total_len=40"
           }
@@ -10537,7 +10774,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 782,
+            "line" : 798,
             "column" : 8,
             "source_fragment" : "timedelta_step0()"
           },
@@ -10566,7 +10803,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 784,
+            "line" : 800,
             "column" : 12,
             "source_fragment" : "timedelta_step1_write()"
           },
@@ -10595,7 +10832,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 785,
+            "line" : 801,
             "column" : 12,
             "source_fragment" : "timedelta_step2_write()"
           },
@@ -10624,7 +10861,7 @@
           "id" : 3,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 787,
+            "line" : 803,
             "column" : 12,
             "source_fragment" : "timedelta_step1_read()"
           },
@@ -10653,7 +10890,7 @@
           "id" : 4,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 788,
+            "line" : 804,
             "column" : 12,
             "source_fragment" : "timedelta_step2_read()"
           },
@@ -10682,7 +10919,7 @@
           "id" : 5,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 789,
+            "line" : 805,
             "column" : 12,
             "source_fragment" : "timedelta_step3_read()"
           },
@@ -10711,7 +10948,7 @@
           "id" : 6,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 801,
+            "line" : 817,
             "column" : 16,
             "source_fragment" : "cuckoo_delete()"
           },
@@ -10724,9 +10961,9 @@
           "direct_meters" : null,
           "action_ids" : [29],
           "actions" : ["SwitchIngress.cuckoo_delete"],
-          "base_default_next" : "node_13",
+          "base_default_next" : "tbl_splitproxycuckoo819",
           "next_tables" : {
-            "SwitchIngress.cuckoo_delete" : "node_13"
+            "SwitchIngress.cuckoo_delete" : "tbl_splitproxycuckoo819"
           },
           "default_entry" : {
             "action_id" : 29,
@@ -10736,11 +10973,40 @@
           }
         },
         {
-          "name" : "tbl_cuckoo_insert_init",
+          "name" : "tbl_splitproxycuckoo819",
           "id" : 7,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 804,
+            "line" : 819,
+            "column" : 33,
+            "source_fragment" : "= 0; ..."
+          },
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [34],
+          "actions" : ["splitproxycuckoo819"],
+          "base_default_next" : "node_14",
+          "next_tables" : {
+            "splitproxycuckoo819" : "node_14"
+          },
+          "default_entry" : {
+            "action_id" : 34,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_cuckoo_insert_init",
+          "id" : 8,
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 823,
             "column" : 16,
             "source_fragment" : "cuckoo_insert_init()"
           },
@@ -10753,9 +11019,9 @@
           "direct_meters" : null,
           "action_ids" : [26],
           "actions" : ["SwitchIngress.cuckoo_insert_init"],
-          "base_default_next" : "node_13",
+          "base_default_next" : "node_14",
           "next_tables" : {
-            "SwitchIngress.cuckoo_insert_init" : "node_13"
+            "SwitchIngress.cuckoo_insert_init" : "node_14"
           },
           "default_entry" : {
             "action_id" : 26,
@@ -10766,10 +11032,10 @@
         },
         {
           "name" : "tbl_cuckoo_insert_kick_round",
-          "id" : 8,
+          "id" : 9,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 813,
+            "line" : 832,
             "column" : 12,
             "source_fragment" : "cuckoo_insert_kick_round()"
           },
@@ -10782,9 +11048,9 @@
           "direct_meters" : null,
           "action_ids" : [27],
           "actions" : ["SwitchIngress.cuckoo_insert_kick_round"],
-          "base_default_next" : "node_15",
+          "base_default_next" : "node_16",
           "next_tables" : {
-            "SwitchIngress.cuckoo_insert_kick_round" : "node_15"
+            "SwitchIngress.cuckoo_insert_kick_round" : "node_16"
           },
           "default_entry" : {
             "action_id" : 27,
@@ -10795,10 +11061,10 @@
         },
         {
           "name" : "tbl_cuckoo_insert_kick_fail",
-          "id" : 9,
+          "id" : 10,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 816,
+            "line" : 835,
             "column" : 16,
             "source_fragment" : "cuckoo_insert_kick_fail()"
           },
@@ -10824,10 +11090,10 @@
         },
         {
           "name" : "tbl_drop",
-          "id" : 10,
+          "id" : 11,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 817,
+            "line" : 836,
             "column" : 16,
             "source_fragment" : "drop()"
           },
@@ -10853,10 +11119,10 @@
         },
         {
           "name" : "tbl_debug_write_loop_count",
-          "id" : 11,
+          "id" : 12,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 826,
+            "line" : 845,
             "column" : 12,
             "source_fragment" : "debug_write_loop_count()"
           },
@@ -10869,9 +11135,9 @@
           "direct_meters" : null,
           "action_ids" : [32],
           "actions" : ["SwitchIngress.debug_write_loop_count"],
-          "base_default_next" : "node_19",
+          "base_default_next" : "node_20",
           "next_tables" : {
-            "SwitchIngress.debug_write_loop_count" : "node_19"
+            "SwitchIngress.debug_write_loop_count" : "node_20"
           },
           "default_entry" : {
             "action_id" : 32,
@@ -10881,11 +11147,11 @@
           }
         },
         {
-          "name" : "tbl_splitproxycuckoo830",
-          "id" : 12,
+          "name" : "tbl_splitproxycuckoo849",
+          "id" : 13,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 830,
+            "line" : 849,
             "column" : 16,
             "source_fragment" : "resubmit_preserving_field_list(1)"
           },
@@ -10896,14 +11162,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [34],
-          "actions" : ["splitproxycuckoo830"],
+          "action_ids" : [35],
+          "actions" : ["splitproxycuckoo849"],
           "base_default_next" : "tbl_bypass_egress",
           "next_tables" : {
-            "splitproxycuckoo830" : "tbl_bypass_egress"
+            "splitproxycuckoo849" : "tbl_bypass_egress"
           },
           "default_entry" : {
-            "action_id" : 34,
+            "action_id" : 35,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -10911,10 +11177,10 @@
         },
         {
           "name" : "tbl_bypass_egress",
-          "id" : 13,
+          "id" : 14,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 831,
+            "line" : 850,
             "column" : 16,
             "source_fragment" : "bypass_egress()"
           },
@@ -10940,10 +11206,10 @@
         },
         {
           "name" : "tbl_skip_routing",
-          "id" : 14,
+          "id" : 15,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 832,
+            "line" : 851,
             "column" : 16,
             "source_fragment" : "skip_routing()"
           },
@@ -10956,9 +11222,9 @@
           "direct_meters" : null,
           "action_ids" : [4],
           "actions" : ["SwitchIngress.skip_routing"],
-          "base_default_next" : "node_27",
+          "base_default_next" : "node_28",
           "next_tables" : {
-            "SwitchIngress.skip_routing" : "node_27"
+            "SwitchIngress.skip_routing" : "node_28"
           },
           "default_entry" : {
             "action_id" : 4,
@@ -10969,10 +11235,10 @@
         },
         {
           "name" : "tbl_cuckoo_insert_kick_success",
-          "id" : 15,
+          "id" : 16,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 835,
+            "line" : 854,
             "column" : 16,
             "source_fragment" : "cuckoo_insert_kick_success()"
           },
@@ -10998,10 +11264,10 @@
         },
         {
           "name" : "tbl_debug_write_final_loop_count",
-          "id" : 16,
+          "id" : 17,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 836,
+            "line" : 855,
             "column" : 16,
             "source_fragment" : "debug_write_final_loop_count()"
           },
@@ -11027,10 +11293,10 @@
         },
         {
           "name" : "tbl_drop_0",
-          "id" : 17,
+          "id" : 18,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 837,
+            "line" : 856,
             "column" : 16,
             "source_fragment" : "drop()"
           },
@@ -11043,9 +11309,9 @@
           "direct_meters" : null,
           "action_ids" : [9],
           "actions" : ["SwitchIngress.drop"],
-          "base_default_next" : "node_27",
+          "base_default_next" : "node_28",
           "next_tables" : {
-            "SwitchIngress.drop" : "node_27"
+            "SwitchIngress.drop" : "node_28"
           },
           "default_entry" : {
             "action_id" : 9,
@@ -11056,10 +11322,10 @@
         },
         {
           "name" : "tbl_cuckoo_check",
-          "id" : 18,
+          "id" : 19,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 840,
+            "line" : 859,
             "column" : 12,
             "source_fragment" : "cuckoo_check()"
           },
@@ -11072,9 +11338,9 @@
           "direct_meters" : null,
           "action_ids" : [28],
           "actions" : ["SwitchIngress.cuckoo_check"],
-          "base_default_next" : "node_27",
+          "base_default_next" : "node_28",
           "next_tables" : {
-            "SwitchIngress.cuckoo_check" : "node_27"
+            "SwitchIngress.cuckoo_check" : "node_28"
           },
           "default_entry" : {
             "action_id" : 28,
@@ -11084,40 +11350,11 @@
           }
         },
         {
-          "name" : "tbl_splitproxycuckoo847",
-          "id" : 19,
-          "source_info" : {
-            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 847,
-            "column" : 40,
-            "source_fragment" : "="
-          },
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [35],
-          "actions" : ["splitproxycuckoo847"],
-          "base_default_next" : "SwitchIngress.tb_triage_pkt_types_nextstep",
-          "next_tables" : {
-            "splitproxycuckoo847" : "SwitchIngress.tb_triage_pkt_types_nextstep"
-          },
-          "default_entry" : {
-            "action_id" : 35,
-            "action_const" : true,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
-          "name" : "tbl_splitproxycuckoo849",
+          "name" : "tbl_splitproxycuckoo866",
           "id" : 20,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 849,
+            "line" : 866,
             "column" : 40,
             "source_fragment" : "="
           },
@@ -11129,10 +11366,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [36],
-          "actions" : ["splitproxycuckoo849"],
+          "actions" : ["splitproxycuckoo866"],
           "base_default_next" : "SwitchIngress.tb_triage_pkt_types_nextstep",
           "next_tables" : {
-            "splitproxycuckoo849" : "SwitchIngress.tb_triage_pkt_types_nextstep"
+            "splitproxycuckoo866" : "SwitchIngress.tb_triage_pkt_types_nextstep"
           },
           "default_entry" : {
             "action_id" : 36,
@@ -11142,8 +11379,37 @@
           }
         },
         {
-          "name" : "SwitchIngress.tb_triage_pkt_types_nextstep",
+          "name" : "tbl_splitproxycuckoo868",
           "id" : 21,
+          "source_info" : {
+            "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
+            "line" : 868,
+            "column" : 40,
+            "source_fragment" : "="
+          },
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [37],
+          "actions" : ["splitproxycuckoo868"],
+          "base_default_next" : "SwitchIngress.tb_triage_pkt_types_nextstep",
+          "next_tables" : {
+            "splitproxycuckoo868" : "SwitchIngress.tb_triage_pkt_types_nextstep"
+          },
+          "default_entry" : {
+            "action_id" : 37,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "SwitchIngress.tb_triage_pkt_types_nextstep",
+          "id" : 22,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
             "line" : 367,
@@ -11220,15 +11486,15 @@
           "direct_meters" : null,
           "action_ids" : [6, 19, 20, 16, 17, 0, 18],
           "actions" : ["SwitchIngress.drop", "SwitchIngress.start_crc_calc_synack", "SwitchIngress.start_crc_calc_tagack", "SwitchIngress.client_to_server_nonsyn_ongoing", "SwitchIngress.server_to_client_normal_traffic", "NoAction", "SwitchIngress.non_tcp_traffic"],
-          "base_default_next" : "node_31",
+          "base_default_next" : "node_32",
           "next_tables" : {
-            "SwitchIngress.drop" : "node_31",
-            "SwitchIngress.start_crc_calc_synack" : "node_31",
-            "SwitchIngress.start_crc_calc_tagack" : "node_31",
-            "SwitchIngress.client_to_server_nonsyn_ongoing" : "node_31",
-            "SwitchIngress.server_to_client_normal_traffic" : "node_31",
-            "NoAction" : "node_31",
-            "SwitchIngress.non_tcp_traffic" : "node_31"
+            "SwitchIngress.drop" : "node_32",
+            "SwitchIngress.start_crc_calc_synack" : "node_32",
+            "SwitchIngress.start_crc_calc_tagack" : "node_32",
+            "SwitchIngress.client_to_server_nonsyn_ongoing" : "node_32",
+            "SwitchIngress.server_to_client_normal_traffic" : "node_32",
+            "NoAction" : "node_32",
+            "SwitchIngress.non_tcp_traffic" : "node_32"
           },
           "default_entry" : {
             "action_id" : 6,
@@ -11238,11 +11504,11 @@
           }
         },
         {
-          "name" : "tbl_splitproxycuckoo858",
-          "id" : 22,
+          "name" : "tbl_splitproxycuckoo877",
+          "id" : 23,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 858,
+            "line" : 877,
             "column" : 38,
             "source_fragment" : "= hdr.tcp.ack_no - 1; ..."
           },
@@ -11253,14 +11519,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [37],
-          "actions" : ["splitproxycuckoo858"],
+          "action_ids" : [38],
+          "actions" : ["splitproxycuckoo877"],
           "base_default_next" : "SwitchIngress.tb_decide_output_type",
           "next_tables" : {
-            "splitproxycuckoo858" : "SwitchIngress.tb_decide_output_type"
+            "splitproxycuckoo877" : "SwitchIngress.tb_decide_output_type"
           },
           "default_entry" : {
-            "action_id" : 37,
+            "action_id" : 38,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -11268,7 +11534,7 @@
         },
         {
           "name" : "SwitchIngress.tb_decide_output_type",
-          "id" : 23,
+          "id" : 24,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
             "line" : 483,
@@ -11297,11 +11563,11 @@
           "direct_meters" : null,
           "action_ids" : [23, 22, 2],
           "actions" : ["SwitchIngress.craft_synack_reply", "SwitchIngress.verify_ack", "NoAction"],
-          "base_default_next" : "node_34",
+          "base_default_next" : "node_35",
           "next_tables" : {
-            "SwitchIngress.craft_synack_reply" : "node_34",
-            "SwitchIngress.verify_ack" : "node_34",
-            "NoAction" : "node_34"
+            "SwitchIngress.craft_synack_reply" : "node_35",
+            "SwitchIngress.verify_ack" : "node_35",
+            "NoAction" : "node_35"
           },
           "default_entry" : {
             "action_id" : 2,
@@ -11311,11 +11577,11 @@
           }
         },
         {
-          "name" : "tbl_splitproxycuckoo867",
-          "id" : 24,
+          "name" : "tbl_splitproxycuckoo886",
+          "id" : 25,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 867,
+            "line" : 886,
             "column" : 59,
             "source_fragment" : "="
           },
@@ -11326,25 +11592,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [38],
-          "actions" : ["splitproxycuckoo867"],
-          "base_default_next" : "node_39",
+          "action_ids" : [39],
+          "actions" : ["splitproxycuckoo886"],
+          "base_default_next" : "node_40",
           "next_tables" : {
-            "splitproxycuckoo867" : "node_39"
+            "splitproxycuckoo886" : "node_40"
           },
           "default_entry" : {
-            "action_id" : 38,
+            "action_id" : 39,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_splitproxycuckoo869",
-          "id" : 25,
+          "name" : "tbl_splitproxycuckoo888",
+          "id" : 26,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 869,
+            "line" : 888,
             "column" : 59,
             "source_fragment" : "=1; ..."
           },
@@ -11355,14 +11621,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [39],
-          "actions" : ["splitproxycuckoo869"],
+          "action_ids" : [40],
+          "actions" : ["splitproxycuckoo888"],
           "base_default_next" : "tbl_skip_routing_0",
           "next_tables" : {
-            "splitproxycuckoo869" : "tbl_skip_routing_0"
+            "splitproxycuckoo888" : "tbl_skip_routing_0"
           },
           "default_entry" : {
-            "action_id" : 39,
+            "action_id" : 40,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -11370,10 +11636,10 @@
         },
         {
           "name" : "tbl_skip_routing_0",
-          "id" : 26,
+          "id" : 27,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 871,
+            "line" : 890,
             "column" : 20,
             "source_fragment" : "skip_routing()"
           },
@@ -11386,9 +11652,9 @@
           "direct_meters" : null,
           "action_ids" : [5],
           "actions" : ["SwitchIngress.skip_routing"],
-          "base_default_next" : "node_39",
+          "base_default_next" : "node_40",
           "next_tables" : {
-            "SwitchIngress.skip_routing" : "node_39"
+            "SwitchIngress.skip_routing" : "node_40"
           },
           "default_entry" : {
             "action_id" : 5,
@@ -11399,10 +11665,10 @@
         },
         {
           "name" : "tbl_finalize_tagack",
-          "id" : 27,
+          "id" : 28,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 875,
+            "line" : 894,
             "column" : 20,
             "source_fragment" : "finalize_tagack()"
           },
@@ -11415,9 +11681,9 @@
           "direct_meters" : null,
           "action_ids" : [24],
           "actions" : ["SwitchIngress.finalize_tagack"],
-          "base_default_next" : "tbl_splitproxycuckoo878",
+          "base_default_next" : "tbl_splitproxycuckoo897",
           "next_tables" : {
-            "SwitchIngress.finalize_tagack" : "tbl_splitproxycuckoo878"
+            "SwitchIngress.finalize_tagack" : "tbl_splitproxycuckoo897"
           },
           "default_entry" : {
             "action_id" : 24,
@@ -11427,11 +11693,11 @@
           }
         },
         {
-          "name" : "tbl_splitproxycuckoo878",
-          "id" : 28,
+          "name" : "tbl_splitproxycuckoo897",
+          "id" : 29,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 878,
+            "line" : 897,
             "column" : 28,
             "source_fragment" : "=5; ..."
           },
@@ -11442,14 +11708,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [40],
-          "actions" : ["splitproxycuckoo878"],
+          "action_ids" : [41],
+          "actions" : ["splitproxycuckoo897"],
           "base_default_next" : "tbl_compute_tcp_length",
           "next_tables" : {
-            "splitproxycuckoo878" : "tbl_compute_tcp_length"
+            "splitproxycuckoo897" : "tbl_compute_tcp_length"
           },
           "default_entry" : {
-            "action_id" : 40,
+            "action_id" : 41,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -11457,10 +11723,10 @@
         },
         {
           "name" : "tbl_compute_tcp_length",
-          "id" : 29,
+          "id" : 30,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 884,
+            "line" : 903,
             "column" : 8,
             "source_fragment" : "compute_tcp_length()"
           },
@@ -11473,9 +11739,9 @@
           "direct_meters" : null,
           "action_ids" : [25],
           "actions" : ["SwitchIngress.compute_tcp_length"],
-          "base_default_next" : "node_43",
+          "base_default_next" : "node_44",
           "next_tables" : {
-            "SwitchIngress.compute_tcp_length" : "node_43"
+            "SwitchIngress.compute_tcp_length" : "node_44"
           },
           "default_entry" : {
             "action_id" : 25,
@@ -11486,7 +11752,7 @@
         },
         {
           "name" : "SwitchIngress.tb_ipv4_lpm",
-          "id" : 30,
+          "id" : 31,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
             "line" : 429,
@@ -11530,7 +11796,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 783,
+            "line" : 799,
             "column" : 11,
             "source_fragment" : "hdr.udp.isValid() && standard_metadata.ingress_port == SERVER_PORT"
           },
@@ -11573,7 +11839,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 799,
+            "line" : 815,
             "column" : 12,
             "source_fragment" : "hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece == 1 && meta.cuckoo_loop_count == 0"
           },
@@ -11649,14 +11915,14 @@
             }
           },
           "true_next" : "node_10",
-          "false_next" : "node_13"
+          "false_next" : "node_14"
         },
         {
           "name" : "node_10",
           "id" : 2,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 800,
+            "line" : 816,
             "column" : 15,
             "source_fragment" : "hdr.tcp.flag_urg == 1"
           },
@@ -11678,11 +11944,11 @@
           "false_next" : "tbl_cuckoo_insert_init"
         },
         {
-          "name" : "node_13",
+          "name" : "node_14",
           "id" : 3,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 812,
+            "line" : 831,
             "column" : 11,
             "source_fragment" : "meta.cuckoo_loop_count != 0"
           },
@@ -11704,11 +11970,11 @@
           "false_next" : "tbl_cuckoo_check"
         },
         {
-          "name" : "node_15",
+          "name" : "node_16",
           "id" : 4,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 815,
+            "line" : 834,
             "column" : 16,
             "source_fragment" : "meta.cuckoo_loop_count == 501"
           },
@@ -11730,11 +11996,11 @@
           "false_next" : "tbl_debug_write_loop_count"
         },
         {
-          "name" : "node_19",
+          "name" : "node_20",
           "id" : 5,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 828,
+            "line" : 847,
             "column" : 15,
             "source_fragment" : "meta.cuckoo_insert_success == 0"
           },
@@ -11752,15 +12018,15 @@
               }
             }
           },
-          "true_next" : "tbl_splitproxycuckoo830",
+          "true_next" : "tbl_splitproxycuckoo849",
           "false_next" : "tbl_cuckoo_insert_kick_success"
         },
         {
-          "name" : "node_27",
+          "name" : "node_28",
           "id" : 6,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 846,
+            "line" : 865,
             "column" : 11,
             "source_fragment" : "standard_metadata.ingress_port==SERVER_PORT"
           },
@@ -11778,15 +12044,15 @@
               }
             }
           },
-          "true_next" : "tbl_splitproxycuckoo847",
-          "false_next" : "tbl_splitproxycuckoo849"
+          "true_next" : "tbl_splitproxycuckoo866",
+          "false_next" : "tbl_splitproxycuckoo868"
         },
         {
-          "name" : "node_31",
+          "name" : "node_32",
           "id" : 7,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 857,
+            "line" : 876,
             "column" : 11,
             "source_fragment" : "meta.bypass_egress == 0"
           },
@@ -11804,15 +12070,15 @@
               }
             }
           },
-          "true_next" : "tbl_splitproxycuckoo858",
+          "true_next" : "tbl_splitproxycuckoo877",
           "false_next" : "tbl_compute_tcp_length"
         },
         {
-          "name" : "node_34",
+          "name" : "node_35",
           "id" : 8,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 863,
+            "line" : 882,
             "column" : 15,
             "source_fragment" : "meta.callback_type == CALLBACK_TYPE_TAGACK"
           },
@@ -11830,15 +12096,15 @@
               }
             }
           },
-          "true_next" : "node_35",
+          "true_next" : "node_36",
           "false_next" : "tbl_compute_tcp_length"
         },
         {
-          "name" : "node_35",
+          "name" : "node_36",
           "id" : 9,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 865,
+            "line" : 884,
             "column" : 19,
             "source_fragment" : "meta.ack_verify_timediff==0"
           },
@@ -11856,15 +12122,15 @@
               }
             }
           },
-          "true_next" : "tbl_splitproxycuckoo867",
-          "false_next" : "tbl_splitproxycuckoo869"
+          "true_next" : "tbl_splitproxycuckoo886",
+          "false_next" : "tbl_splitproxycuckoo888"
         },
         {
-          "name" : "node_39",
+          "name" : "node_40",
           "id" : 10,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 874,
+            "line" : 893,
             "column" : 19,
             "source_fragment" : "hdr.tcp.isValid() && !hdr.udp.isValid() && meta.callback_type == CALLBACK_TYPE_TAGACK"
           },
@@ -11924,14 +12190,14 @@
             }
           },
           "true_next" : "tbl_finalize_tagack",
-          "false_next" : "tbl_splitproxycuckoo878"
+          "false_next" : "tbl_splitproxycuckoo897"
         },
         {
-          "name" : "node_43",
+          "name" : "node_44",
           "id" : 11,
           "source_info" : {
             "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-            "line" : 887,
+            "line" : 906,
             "column" : 12,
             "source_fragment" : "meta.skip_routing == 0 && hdr.ipv4.isValid()"
           },
@@ -11976,7 +12242,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 896,
+        "line" : 915,
         "column" : 8,
         "source_fragment" : "SwitchEgress"
       },
@@ -11992,7 +12258,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 911,
+        "line" : 930,
         "column" : 1,
         "source_fragment" : "update_checksum( ..."
       },
@@ -12018,7 +12284,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "/home/tristan/Desktop/syn-flood-p4/demo-split-proxy-cuckoo/implementation/p4src/split-proxy-cuckoo.p4",
-        "line" : 927,
+        "line" : 946,
         "column" : 8,
         "source_fragment" : "update_checksum_with_payload( ..."
       },
