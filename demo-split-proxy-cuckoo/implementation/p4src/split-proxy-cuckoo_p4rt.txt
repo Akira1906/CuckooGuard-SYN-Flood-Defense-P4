@@ -60,12 +60,6 @@ tables {
   }
   match_fields {
     id: 9
-    name: "meta.callback_type"
-    bitwidth: 4
-    match_type: TERNARY
-  }
-  match_fields {
-    id: 10
     name: "meta.cuckoo_check_passed"
     bitwidth: 1
     match_type: TERNARY
