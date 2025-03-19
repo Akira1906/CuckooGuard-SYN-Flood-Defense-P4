@@ -26,19 +26,6 @@ class P4RuntimeController():
         )
 
         self.configureTables()
-    #     self.controlLoop()
-
-    # def controlLoop(self):
-    #     delete_bloom_id = 1
-    #     # for now it should manage the time-decaying bloom filter to support automatic expiration of elements
-    #     # control plane can communicate to P4 by altering table entries
-    #     # idea: add a new table to P4 part with the purpose to reset and switch Bloom Filters
-    #     while(True):
-    #         sleep(10)
-    #         self.ss.table_delete_match('tb_bloom_time_decay', 'bloom_time_decay', [str((delete_bloom_id + 1) % 2)])
-    #         self.ss.table_add('tb_bloom_time_decay', 'bloom_time_decay', [str(delete_bloom_id)], [])
-            
-    #         delete_bloom_id = (delete_bloom_id + 1) % 2
 
     def configureTables(self):
         """Configures the necessary table entries in the P4 switch."""
@@ -95,9 +82,7 @@ class ThriftController():
         
     def periodicRegisterReset(self):
         delete_bloom_id = 1
-        # for now it should manage the time-decaying bloom filter to support automatic expiration of elements
-        # control plane can communicate to P4 by altering table entries
-        # idea: add a new table to P4 part with the purpose to reset and switch Bloom Filters
+
         while(True):
             sleep(10)
             print(f"Reset Bloom Register: reg_bloom_{delete_bloom_id}_*")
@@ -133,7 +118,6 @@ def main():
     
     ThriftController()
         
-    
 
 
 if __name__ == "__main__":

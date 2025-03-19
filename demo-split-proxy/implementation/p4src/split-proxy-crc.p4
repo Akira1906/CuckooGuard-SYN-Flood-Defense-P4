@@ -1,6 +1,10 @@
 #include <core.p4>
 #include <v1model.p4>
 
+#define BLOOM_1_STAGE_SIZE 32w4096
+#define BLOOM_2_STAGE_SIZE 32w4096 
+#define STAGE_SIZE_MINUS_ONE 4095
+
 typedef bit<48> mac_addr_t;
 typedef bit<32> ipv4_addr_t;
 typedef bit<16> ether_type_t;
@@ -276,18 +280,18 @@ control SwitchIngress(
     
     // Bloom Filter for flows
     // Bloom Filter #0
-    register<bit<1>>(32w4096) reg_bloom_0_1;
-    register<bit<1>>(32w4096) reg_bloom_0_2;
+    register<bit<1>>(BLOOM_1_STAGE_SIZE) reg_bloom_0_1;
+    register<bit<1>>(BLOOM_1_STAGE_SIZE) reg_bloom_0_2;
 
     // Bloom Filter #1
-    register<bit<1>>(32w4096) reg_bloom_1_1;
-    register<bit<1>>(32w4096) reg_bloom_1_2;
+    register<bit<1>>(BLOOM_2_STAGE_SIZE) reg_bloom_1_1;
+    register<bit<1>>(BLOOM_2_STAGE_SIZE) reg_bloom_1_2;
 
 
     action set_bloom_1_a(){
         hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
-            (bit<32>)4095);
+            (bit<32>)STAGE_SIZE_MINUS_ONE);
         
         reg_bloom_0_1.write(meta.bloom_hash_1, (bit<1>) 1);
         reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) 1);
@@ -296,7 +300,7 @@ control SwitchIngress(
     action set_bloom_2_a(){
         hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
-            (bit<32>)4095);
+            (bit<32>)STAGE_SIZE_MINUS_ONE);
 
         reg_bloom_0_2.write(meta.bloom_hash_2, (bit<1>) 1);
         reg_bloom_1_2.write(meta.bloom_hash_2, (bit<1>) 1);
@@ -305,7 +309,7 @@ control SwitchIngress(
     action get_bloom_1_a(){
         hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
-            (bit<32>)4095);
+            (bit<32>)STAGE_SIZE_MINUS_ONE);
 
         reg_bloom_0_1.read(meta.bloom_read_1, meta.bloom_hash_1);
 
@@ -317,7 +321,7 @@ control SwitchIngress(
     action get_bloom_2_a(){
         hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
-            (bit<32>)4095);
+            (bit<32>)STAGE_SIZE_MINUS_ONE);
         reg_bloom_0_2.read(meta.bloom_read_2, meta.bloom_hash_2);
 
         if (meta.bloom_read_2 == 0) {

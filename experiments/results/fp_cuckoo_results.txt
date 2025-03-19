@@ -1,0 +1,32 @@
+P is: /home/tristan/p4dev-python-venv/bin/python
+net.ipv6.conf.veth0.disable_ipv6 = 1
+net.ipv6.conf.veth1.disable_ipv6 = 1
+net.ipv6.conf.veth2.disable_ipv6 = 1
+net.ipv6.conf.veth3.disable_ipv6 = 1
+net.ipv6.conf.veth4.disable_ipv6 = 1
+net.ipv6.conf.veth5.disable_ipv6 = 1
+net.ipv6.conf.veth6.disable_ipv6 = 1
+net.ipv6.conf.veth7.disable_ipv6 = 1
+Started simple_switch_grpc...
+Unloading any existing eBPF programs on veth5...
+Calling target program-options parser
+Adding interface veth0 as port 1
+Loading new TC program on veth5...
+Adding interface veth2 as port 2
+Adding interface veth4 as port 3
+Adding interface veth6 as port 68
+Adding interface veth7 as port 196
+Loading new XDP program on veth5...
+Attached eBPF programs to the server's interface (veth5)
+Start SYN-Cookie Control Plane application
+Using packet manipulation module: ptf.packet_scapy
+Data Plane is of type:
+<class 'ptf.dataplane.DataPlane'>
+
+******************************************
+ATTENTION: SOME TESTS DID NOT PASS!!!
+
+The following tests failed:
+UnitTest
+
+******************************************
