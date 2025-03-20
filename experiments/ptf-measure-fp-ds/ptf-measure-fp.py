@@ -49,7 +49,7 @@ def get_packet_mask(pkt):
     return pkt_mask
 
 
-class FPTest(BaseTest):
+class Test(BaseTest):
 
     def setUp(self):
         # Setting up PTF dataplane
@@ -65,9 +65,7 @@ class FPTest(BaseTest):
 
         grpc_addr = '127.0.1.0:9559'
         my_dev1_id = 1
-        p4info_txt_fname = tu.test_param_get("p4info")
-        p4prog_binary_fname = tu.test_param_get("config")
-
+        
         sh.setup(device_id=my_dev1_id,
                  grpc_addr=grpc_addr,
                  election_id=(0, 1),  # (high_32bits, lo_32bits)
@@ -80,12 +78,8 @@ class FPTest(BaseTest):
         logging.debug("tearDown()")
         sh.teardown()
 
-    # idea: test the application with an active control plane as integration test
 
-    # but first write some unit tests, artifical but simpler
-
-
-class UnitTest(FPTest):
+class FPTest(Test):
 
     def runTest(self):
         self.client_mac = "00:00:0a:00:01:01"  # h1 MAC
@@ -107,13 +101,19 @@ class UnitTest(FPTest):
         self.attacker_iface = 2  # h2 -> s1
         self.server_iface = 3  # h3 -> s1
         self.ebpf_iface = 4
+        
+        n_benign_connections = int(tu.test_param_get("n_benign_connections"))
+        n_hostile_test_packets = int(tu.test_param_get("n_hostile_test_packets"))
+        
+        self.packet_processing_delay = 0.01
 
-        connections_set = self.generate_n_connections(n_connections=5000)
+
+        connections_set = self.generate_n_connections(n_connections=n_benign_connections)
 
         self.add_connections_to_filter(connections_set)
 
         fp_rate = self.test_fp_rate(
-            n_samples=10000, benign_connections_set=connections_set)
+            n_samples=n_hostile_test_packets, benign_connections_set=connections_set)
 
         print("START RESULT")
         print(str(fp_rate))
@@ -122,7 +122,6 @@ class UnitTest(FPTest):
     def test_fp_rate(self, n_samples, benign_connections_set):
         # generate test sample connections
 
-        wait_for_packet_time_duration = 37
         n_false_positives = 0
         test_connections = []
         while len(test_connections) < n_samples:
@@ -131,8 +130,10 @@ class UnitTest(FPTest):
             if (ip, port) not in benign_connections_set:
                 test_connections.append((ip, port))
 
-        for client_ip, client_port in test_connections:
-            # send test packet to P4 and check if filter fälschlicherweise let the packet through
+        for i, connection in enumerate(test_connections):
+            client_ip, client_port = connection
+            print(f"test {i}")
+            # send test packet to P4 and check if filter mistakenly let the packet through
             tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
             ack_pkt = (
                 Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
@@ -150,9 +151,10 @@ class UnitTest(FPTest):
             )
 
             try:
-                tu.verify_no_packet(self, ack_pkt, self.ebpf_iface)
+                tu.verify_no_packet(self, ack_pkt, self.ebpf_iface, self.packet_processing_delay)
             except AssertionError:
                 n_false_positives += 1
+                print("False Positive")
 
         return n_false_positives
 
@@ -169,8 +171,10 @@ class UnitTest(FPTest):
 
     def add_connections_to_filter(self, connections_ip_port):
 
-        for client_ip, client_port in connections_ip_port:
+        for i, connection in enumerate(connections_ip_port):
+            client_ip, client_port = connection
             # Safe (verified) insertion into the Filter
+            print(f"add connection {i}")
             self.safe_filter_connection_insertion(client_ip, client_port)
 
     def safe_filter_connection_insertion(self, client_ip, client_port):
@@ -185,8 +189,10 @@ class UnitTest(FPTest):
 
         tu.send_packet(self, self.ebpf_iface, ack_pkt)
 
-        # Step 2: send legitimate TCP packet through P4 check if it gets through Filter operation was successful
+        sleep(self.packet_processing_delay)
 
+        # Step 2: send legitimate TCP packet through P4 check if it gets through Filter operation was successful
+        self.packet_processing_delay
         tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
         ack_pkt = (
             Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
@@ -203,4 +209,8 @@ class UnitTest(FPTest):
             Raw(load=tcp_load)
         )
 
-        tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+        try:
+            tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+        except AssertionError:
+            print(f"insertion of connection {client_ip}:{client_port} failed")
+            raise AssertionError(f"Insertion failed: {client_ip}:{client_port}")

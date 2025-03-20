@@ -7,7 +7,9 @@
 __pycache__
 *.p4i
 *.p4info.txtpb
+*results.txt
 proxy.json
 split-proxy.json
+split-proxy-cuckoo.json
 split-proxy-crc.json
 split-proxy-crc_p4rt.txt

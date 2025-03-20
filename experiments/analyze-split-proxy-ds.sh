@@ -1,17 +1,49 @@
 #!/bin/bash
 
-# example usage; script_name ../demo-split-proxy crc
-
-APP_PATH=$1 # root directory of the according demo-implementation
-FN_SUFFIX=$2 # according file suffix to be used, e.g. crc, cuckoo
-FP_TEST=$3 # file path to the folder of the ptf test to run e.g. ptf-analyze-split-proxy-ds
-TEST_NAME=$4
-
-# APP_PATH="../demo-split-proxy"
-# FN_SUFFIX="crc"
-
 set -e # Exit on error
 # set -x # Debugging output
+
+# Default values (if applicable)
+APP_PATH=""
+FN_SUFFIX=""
+FP_TEST=""
+TEST_NAME=""
+FILTER_SIZE=""
+FINGERPRINT_SIZE=""
+N_BUCKETS=""
+N_BENIGN_CONNECTIONS=""
+N_HOSTILE_TEST_PACKETS=""
+
+# Process named arguments
+ARGS=$(getopt -o a:f:p:t:s:g:b:c:h: --long app_path:,fn_suffix:,fp_test:,test_name:,filter_size:,fingerprint_size:,n_buckets:,n_benign_connections:,n_hostile_test_packets: -- "$@")
+if [[ $? -ne 0 ]]; then
+    echo "Error: Invalid arguments"
+    exit 1
+fi
+
+eval set -- "$ARGS"
+
+while true; do
+    case "$1" in
+        -a|--app_path) APP_PATH="$2"; shift 2 ;;
+        -f|--fn_suffix) FN_SUFFIX="$2"; shift 2 ;;
+        -p|--fp_test) FP_TEST="$2"; shift 2 ;;
+        -t|--test_name) TEST_NAME="$2"; shift 2 ;;
+        -s|--filter_size) FILTER_SIZE="$2"; shift 2 ;;
+        -g|--fingerprint_size) FINGERPRINT_SIZE="$2"; shift 2 ;;
+        -b|--n_buckets) N_BUCKETS="$2"; shift 2 ;;
+        -c|--n_benign_connections) N_BENIGN_CONNECTIONS="$2"; shift 2 ;;
+        -h|--n_hostile_test_packets) N_HOSTILE_TEST_PACKETS="$2"; shift 2 ;;
+        --) shift; break ;;
+        *) break ;;
+    esac
+done
+
+# Ensure required parameters are provided
+if [[ -z "$APP_PATH" || -z "$FN_SUFFIX" || -z "$FP_TEST" || -z "$TEST_NAME" || -z "$FILTER_SIZE" || -z "$FINGERPRINT_SIZE" || -z "$N_BUCKETS" || -z "$N_BENIGN_CONNECTIONS" || -z "$N_HOSTILE_TEST_PACKETS" ]]; then
+    echo "Usage: $0 --app_path <path> --fn_suffix <suffix> --fp_test <test_folder> --test_name <name> --filter_size <size> --fingerprint_size <size> --n_buckets <count> --n_benign_connections <count> --n_hostile_test_packets <count>"
+    exit 1
+fi
 
 cleanup() {
     sudo pkill --f simple_switch_grpc || true
@@ -19,13 +51,37 @@ cleanup() {
     sudo pkill -2 -f tc_load.py || true
     sudo pkill -2 -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
+    echo "cleaning up"
     # sudo ip link del veth0 || true
     # sudo ip link del veth2 || true
     # sudo ip link del veth4 || true
     # sudo ip link del veth6 || true
 }
+# trap cleanup EXIT
+set +e
+trap cleanup EXIT ERR
 
-trap cleanup EXIT
+# Compute dependent values
+FILTER_SIZE_MINUS_ONE=$((FILTER_SIZE - 1))
+FILTER_SIZE_MINUS_ONE="32w$FILTER_SIZE_MINUS_ONE"
+FILTER_SIZE="32w$FILTER_SIZE"
+
+N_BUCKETS_MINUS_ONE=$((N_BUCKETS - 1))
+N_BUCKETS_MINUS_ONE="$N_BUCKETS_MINUS_ONE"
+
+
+# Compile P4 Program
+p4c --target bmv2 \
+    --arch v1model \
+    --p4runtime-files "$APP_PATH/implementation/p4src/split-proxy-$FN_SUFFIX.p4info.txtpb" \
+    "$APP_PATH/implementation/p4src/split-proxy-$FN_SUFFIX.p4" \
+    "-D FILTER_SIZE=$FILTER_SIZE" \
+    "-D FILTER_SIZE_MINUS_ONE=$FILTER_SIZE_MINUS_ONE" \
+    "-D FINGERPRINT_SIZE=$FINGERPRINT_SIZE" \
+    "-D N_BUCKETS=$N_BUCKETS" \
+    "-D N_BUCKETS_MINUS_ONE=$N_BUCKETS_MINUS_ONE" \
+    -o "$APP_PATH/implementation/p4src/"
+echo "compiled P4 program.."
 
 P=${HOME}'/p4dev-python-venv/bin/python'
 
@@ -56,15 +112,7 @@ sudo sysctl net.ipv6.conf.veth5.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth6.disable_ipv6=1
 sudo sysctl net.ipv6.conf.veth7.disable_ipv6=1
 
-
-# Compile P4 Program
-p4c --target bmv2 \
-    --arch v1model \
-    --p4runtime-files "$APP_PATH/implementation/p4src/split-proxy-$FN_SUFFIX.p4info.txtpb" \
-    "$APP_PATH/implementation/p4src/split-proxy-$FN_SUFFIX.p4"\
-    -o "$APP_PATH/implementation/p4src/"
-
-# Remove old log file
+# Remove old log files
 
 /bin/rm -f "logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log.txt"
 /bin/rm -f "logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log.1.txt"
@@ -74,16 +122,15 @@ p4c --target bmv2 \
 
 sudo simple_switch_grpc \
      --device-id 1 \
-     --log-file "logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log" \
-     --log-flush \
-     --dump-packet-data 10000 \
      -i 1@veth0 \
      -i 2@veth2 \
      -i 3@veth4 \
      -i 68@veth6 \
      -i 196@veth7 \
      --no-p4 &
-
+    #  --log-file "logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log" \
+    #  --log-flush \
+    #  --dump-packet-data 10000 \
 echo "Started simple_switch_grpc..."
 
 BPFIFACE="veth5"
@@ -135,9 +182,7 @@ sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
     -i 2@veth3 \
     -i 3@veth5 \
     -i 4@veth4 \
-    -i 68@veth6 \
-    -i 196@veth7 \
-    --test-params="grpcaddr='localhost:9559';p4info='$APP_PATH/implementation/p4src/split-proxy-$FN_SUFFIX.p4info.txtpb';config='$APP_PATH/implementation/p4src/split-proxy-$FN_SUFFIX.json'" \
+    --test-params="grpcaddr='localhost:9559';n_benign_connections='$N_BENIGN_CONNECTIONS';n_hostile_test_packets='$N_HOSTILE_TEST_PACKETS'" \
     --test-dir $FP_TEST
 
 echo "PTF test finished.  Waiting 2 seconds before cleanup"

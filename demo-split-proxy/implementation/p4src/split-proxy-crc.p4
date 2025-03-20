@@ -1,9 +1,16 @@
 #include <core.p4>
 #include <v1model.p4>
 
-#define BLOOM_1_STAGE_SIZE 32w4096
-#define BLOOM_2_STAGE_SIZE 32w4096 
-#define STAGE_SIZE_MINUS_ONE 4095
+#ifndef FILTER_SIZE
+#define FILTER_SIZE 32w4096
+#endif
+
+#ifndef FILTER_SIZE_MINUS_ONE
+#define FILTER_SIZE_MINUS_ONE 4095
+#endif
+
+#define STAGE_SIZE_MINUS_ONE FILTER_SIZE_MINUS_ONE
+#define BLOOM_STAGE_SIZE FILTER_SIZE
 
 typedef bit<48> mac_addr_t;
 typedef bit<32> ipv4_addr_t;
@@ -280,12 +287,12 @@ control SwitchIngress(
     
     // Bloom Filter for flows
     // Bloom Filter #0
-    register<bit<1>>(BLOOM_1_STAGE_SIZE) reg_bloom_0_1;
-    register<bit<1>>(BLOOM_1_STAGE_SIZE) reg_bloom_0_2;
+    register<bit<1>>(BLOOM_STAGE_SIZE) reg_bloom_0_1;
+    register<bit<1>>(BLOOM_STAGE_SIZE) reg_bloom_0_2;
 
     // Bloom Filter #1
-    register<bit<1>>(BLOOM_2_STAGE_SIZE) reg_bloom_1_1;
-    register<bit<1>>(BLOOM_2_STAGE_SIZE) reg_bloom_1_2;
+    register<bit<1>>(BLOOM_STAGE_SIZE) reg_bloom_1_1;
+    register<bit<1>>(BLOOM_STAGE_SIZE) reg_bloom_1_2;
 
 
     action set_bloom_1_a(){

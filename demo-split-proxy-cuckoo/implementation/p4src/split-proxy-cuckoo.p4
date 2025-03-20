@@ -1,11 +1,36 @@
 #include <core.p4>
 #include <v1model.p4>
 
+#ifndef FILTER_SIZE //CUCKOO_N_FINGERPRINTS
+#define FILTER_SIZE 32w316
+#endif
+#define CUCKOO_N_FINGERPRINTS FILTER_SIZE
+
+
+// #ifndef FILTER_SIZE_MINUS_ONE //N_FINGERPRINTS_MINUS_ONE
+// #define FILTER_SIZE_MINUS_ONE 315
+// #endif
+// #define N_FINGERPRINTS_MINUS_ONE FILTER_SIZE_MINUS_ONE
+
+#ifndef FINGERPRINT_SIZE
+#define FINGERPRINT_SIZE 10
+#endif
+
+const bit<6> fp_bit_index = 32 - FINGERPRINT_SIZE;
+
+#ifndef N_BUCKETS
+#define N_BUCKETS 79
+#endif
+
+#ifndef N_BUCKETS_MINUS_ONE
+#define N_BUCKETS_MINUS_ONE 78
+#endif
+
 typedef bit<48> mac_addr_t;
 typedef bit<32> ipv4_addr_t;
 typedef bit<16> ether_type_t;
 // cuckoo fingeprint size
-typedef bit<10> cuckoo_fingerprint_t;
+typedef bit<FINGERPRINT_SIZE> cuckoo_fingerprint_t;
 const ether_type_t ETHERTYPE_IPV4 = 16w0x0800;
 const ether_type_t ETHERTYPE_CUCKOO = 16w0xff00;
 
@@ -526,9 +551,9 @@ control SwitchIngress(
     }
 
     // CUCKOO Filter
-    // fingerprint: 10 bits, 79 * 4 = 316 entries
-    // capacity is 79
-    register<cuckoo_fingerprint_t>(32w316) reg_cuckoo;
+    // e.g. fingerprint: 10 bits, 79 * 4 = 316 entries
+    // e.g. capacity is 79
+    register<cuckoo_fingerprint_t>(CUCKOO_N_FINGERPRINTS) reg_cuckoo;
 
     action cuckoo_bucket_insert(bit<32> bucket_index) {
         // check all 4 possible bucket values and insert if any of them is empty
@@ -568,17 +593,17 @@ control SwitchIngress(
     action cuckoo_calc_index_pair() {
         // calculate index1, index_hash(item)
         hash(meta.cuckoo_index1, HashAlgorithm.crc32, (bit<32>)0, {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port},
-        (bit<32>) 78);
+        (bit<32>) N_BUCKETS_MINUS_ONE);
 
         // index2, index_hash(fingerprint)
         hash(meta.cuckoo_index2, HashAlgorithm.crc32, (bit<32>)0, {meta.cuckoo_fingerprint},
-        (bit<32>) 78);
+        (bit<32>) N_BUCKETS_MINUS_ONE);
 
         bit<32> temp_index;
 
         temp_index = meta.cuckoo_index1 ^ meta.cuckoo_index2;
-        if(temp_index >= 79){
-            temp_index = temp_index - 79;
+        if(temp_index >= N_BUCKETS){
+            temp_index = temp_index - N_BUCKETS;
         }
         meta.cuckoo_index2 = temp_index;
     }
@@ -589,7 +614,7 @@ control SwitchIngress(
             {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
             (bit<32>)4294967295);
 
-        meta.cuckoo_fingerprint = index_hash[31:22];
+        meta.cuckoo_fingerprint = index_hash[31:fp_bit_index];
         meta.pseudo_random_bits = index_hash[3:0];
     }
 
@@ -611,7 +636,6 @@ control SwitchIngress(
         if (meta.cuckoo_insert_success == 0){
 
             // Choose a random out of the indices to save to header
-            // bit<1> random = meta.pseudo_random_bits[0:0];
             bit<1> random_bit;
             random(random_bit, 0, 1);
 
@@ -653,10 +677,10 @@ control SwitchIngress(
 
         bit<32> index_hash;
         hash(index_hash, HashAlgorithm.crc32, (bit<32>)0, {meta.cuckoo_fingerprint},
-        (bit<32>) 78);
+        (bit<32>) N_BUCKETS_MINUS_ONE);
         index_hash = meta.cuckoo_index ^ index_hash;
-        if (index_hash >= 79) {
-            index_hash = index_hash - 79; // workaround for modulo
+        if (index_hash >= N_BUCKETS) {
+            index_hash = index_hash - N_BUCKETS; // workaround for modulo
         }
         meta.cuckoo_index = index_hash;
 
