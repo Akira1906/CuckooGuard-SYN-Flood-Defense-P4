@@ -11,6 +11,7 @@ import ptf
 import ptf.testutils as tu
 from ptf.base_tests import BaseTest
 import p4runtime_sh.shell as sh
+import ptf.testutils
 from scapy.all import Ether, IP, TCP, Raw
 from time import sleep
 import random
@@ -35,16 +36,16 @@ def get_packet_mask(pkt):
 
     pkt_mask.set_do_not_care_all()
 
-    pkt_mask.set_care_packet(Ether, "src")
-    pkt_mask.set_care_packet(Ether, "dst")
-    pkt_mask.set_care_packet(IP, "src")
-    pkt_mask.set_care_packet(IP, "dst")
-    pkt_mask.set_care_packet(IP, "ttl")
-    pkt_mask.set_care_packet(TCP, "sport")
-    pkt_mask.set_care_packet(TCP, "dport")
-    pkt_mask.set_care_packet(TCP, "flags")
-    pkt_mask.set_care_packet(TCP, "seq")
-    pkt_mask.set_care_packet(TCP, "ack")
+    # pkt_mask.set_care_packet(Ether, "src")
+    # pkt_mask.set_care_packet(Ether, "dst")
+    # pkt_mask.set_care_packet(IP, "src")
+    # pkt_mask.set_care_packet(IP, "dst")
+    # # pkt_mask.set_care_packet(IP, "ttl")
+    # pkt_mask.set_care_packet(TCP, "sport")
+    # pkt_mask.set_care_packet(TCP, "dport")
+    # pkt_mask.set_care_packet(TCP, "flags")
+    # pkt_mask.set_care_packet(TCP, "seq")
+    # pkt_mask.set_care_packet(TCP, "ack")
 
     return pkt_mask
 
@@ -71,8 +72,6 @@ class Test(BaseTest):
                  election_id=(0, 1),  # (high_32bits, lo_32bits)
                  # config=sh.FwdPipeConfig(p4info_txt_fname, p4prog_binary_fname),
                  verbose=True)
-        # 1. start the P4 program of the tum approach
-        # 2. start the control plane python application
 
     def tearDown(self):
         logging.debug("tearDown()")
@@ -105,7 +104,7 @@ class FPTest(Test):
         n_benign_connections = int(tu.test_param_get("n_benign_connections"))
         n_hostile_test_packets = int(tu.test_param_get("n_hostile_test_packets"))
         
-        self.packet_processing_delay = 0.01
+        self.packet_processing_delay = 0.00025
 
 
         connections_set = self.generate_n_connections(n_connections=n_benign_connections)
@@ -142,19 +141,17 @@ class FPTest(Test):
                 Raw(load=tcp_load)
             )
             tu.send_packet(self, self.client_iface, ack_pkt)
-
-            ack_pkt = (
-                Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
-                IP(src=client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
-                TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
-                Raw(load=tcp_load)
-            )
-
-            try:
-                tu.verify_no_packet(self, ack_pkt, self.ebpf_iface, self.packet_processing_delay)
-            except AssertionError:
-                n_false_positives += 1
-                print("False Positive")
+            
+            if i % 100 == 0:
+                n_false_positives += tu.count_matched_packets(self, get_packet_mask(ack_pkt), self.ebpf_iface, timeout=self.packet_processing_delay)
+        
+        # catch packets that went through in a delayed manner
+        while(True):
+            count_packets = tu.count_matched_packets(self, get_packet_mask(ack_pkt), self.ebpf_iface)
+            print(f"processing overflow: #{count_packets}")
+            if count_packets == 0:
+                break
+            n_false_positives += count_packets
 
         return n_false_positives
 

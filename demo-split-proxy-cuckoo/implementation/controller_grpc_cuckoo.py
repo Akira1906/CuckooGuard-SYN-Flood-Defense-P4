@@ -81,7 +81,9 @@ def main():
                         help='Delay before starting the application in seconds')
     parser.add_argument('--p4rt', type=str, required=False,
                         help='Set P4 Runtime filepath manually')
-
+    parser.add_argument('--time_decay', type=int, required=False,
+                        help="This parameter is ignored for the Cuckoo-based version")
+    
     # Parse the arguments
     args = parser.parse_args()
 

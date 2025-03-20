@@ -71,20 +71,21 @@ class P4RuntimeController():
 
 class ThriftController():
     
-    def __init__(self):
+    def __init__(self, time_decay = 20):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         json_path = "p4src/split-proxy-crc.json"
         json_path = os.path.join(script_dir, json_path)
         
         self.ss = SimpleSwitchThriftAPI(thrift_port=9090, json_path = json_path)
         
+        self.time_decay = time_decay
         self.periodicRegisterReset()
         
     def periodicRegisterReset(self):
         delete_bloom_id = 1
 
         while(True):
-            sleep(10)
+            sleep(self.time_decay/2)
             print(f"Reset Bloom Register: reg_bloom_{delete_bloom_id}_*")
             self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_1")
             self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_2")
@@ -102,6 +103,8 @@ def main():
                         help='Delay before starting the application in seconds')
     parser.add_argument('--p4rt', type=str, required=False,
                         help='Set P4 Runtime filepath manually')
+    parser.add_argument('--time_decay', type=int, required=False,
+                        help="Set time duration after which a connection decays automatically (i.e. both bloom filter registers should resetted twice)")
 
     # Parse the arguments
     args = parser.parse_args()
@@ -115,10 +118,11 @@ def main():
         P4RuntimeController(p4rt_path)
     else:
         P4RuntimeController()
-    
-    ThriftController()
         
-
-
+    time_decay = args.time_decay
+    if time_decay:
+        ThriftController(time_decay)
+    else:
+        ThriftController()
 if __name__ == "__main__":
     main()

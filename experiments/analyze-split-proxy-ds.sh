@@ -46,20 +46,16 @@ if [[ -z "$APP_PATH" || -z "$FN_SUFFIX" || -z "$FP_TEST" || -z "$TEST_NAME" || -
 fi
 
 cleanup() {
-    sudo pkill --f simple_switch_grpc || true
+    sudo pkill -f simple_switch_grpc || true
     sudo pkill -f "controller_grpc_$FN_SUFFIX.py" || true
-    sudo pkill -2 -f tc_load.py || true
-    sudo pkill -2 -f xdp_load.py || true
+    sudo pkill -f tc_load.py || true
+    sudo pkill -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
     echo "cleaning up"
-    # sudo ip link del veth0 || true
-    # sudo ip link del veth2 || true
-    # sudo ip link del veth4 || true
-    # sudo ip link del veth6 || true
 }
-# trap cleanup EXIT
-set +e
-trap cleanup EXIT ERR
+trap cleanup EXIT
+# set +e
+# trap cleanup EXIT ERR
 
 # Compute dependent values
 FILTER_SIZE_MINUS_ONE=$((FILTER_SIZE - 1))
@@ -88,11 +84,19 @@ P=${HOME}'/p4dev-python-venv/bin/python'
 echo "P is: $P"
 source ${HOME}/p4dev-python-venv/bin/activate
 
+
+# Function to create veth pairs if they don't exist
+create_veth_pair() {
+    if ! ip link show "$1" &>/dev/null; then
+        sudo ip link add "$1" type veth peer name "$2"
+        echo "Created veth pair: $1 <-> $2"
+    fi
+}
 # Create veth pairs correctly
-sudo ip link add veth0 type veth peer name veth1 || true
-sudo ip link add veth2 type veth peer name veth3 || true
-sudo ip link add veth4 type veth peer name veth5 || true
-sudo ip link add veth6 type veth peer name veth7 || true
+create_veth_pair veth0 veth1
+create_veth_pair veth2 veth3
+create_veth_pair veth4 veth5
+create_veth_pair veth6 veth7
 
 # Bring up root namespace interfaces
 sudo ip link set veth0 up || true
@@ -165,7 +169,7 @@ echo "Attached eBPF programs to the server's interface ($BPFIFACE)"
 
 echo "Start SYN-Cookie Control Plane application"
 cd "$APP_PATH/implementation"
-python3 -u "controller_grpc_$FN_SUFFIX.py" &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
+python3 -u "controller_grpc_$FN_SUFFIX.py" --time_decay 999999 &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
 cd ../../experiments
 
 sleep 1
