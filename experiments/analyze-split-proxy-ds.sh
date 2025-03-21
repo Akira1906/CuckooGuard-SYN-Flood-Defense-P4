@@ -47,7 +47,7 @@ fi
 
 cleanup() {
     sudo pkill -f simple_switch_grpc || true
-    sudo pkill -f "controller_grpc_$FN_SUFFIX.py" || true
+    sudo pkill -f "controller_grpc.py" || true
     sudo pkill -f tc_load.py || true
     sudo pkill -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
@@ -169,7 +169,7 @@ echo "Attached eBPF programs to the server's interface ($BPFIFACE)"
 
 echo "Start SYN-Cookie Control Plane application"
 cd "$APP_PATH/implementation"
-python3 -u "controller_grpc_$FN_SUFFIX.py" --time_decay 999999 &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
+python3 -u controller_grpc.py --time_decay 999999 --file_suffix $FN_SUFFIX &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
 cd ../../experiments
 
 sleep 1

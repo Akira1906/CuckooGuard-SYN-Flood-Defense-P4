@@ -5,9 +5,11 @@ import os
 import argparse
 
 
-class DigestController():
+class P4RuntimeController():
 
-    def __init__(self, p4rt_path="p4src/split-proxy-cuckoo.p4info.txtpb"):
+    def __init__(self, file_suffix, p4rt_path=""):
+        if not p4rt_path:
+            p4rt_path=f"p4src/split-proxy{file_suffix}.p4info.txtpb"
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
         p4rt_path = os.path.join(script_dir, p4rt_path)
@@ -78,24 +80,31 @@ def main():
 
     # Add arguments
     parser.add_argument('--delay', type=int, required=False,
-                        help='Delay before starting the application in seconds')
+                        help='Delay before starting the application in seconds',
+                        default = 0)
     parser.add_argument('--p4rt', type=str, required=False,
                         help='Set P4 Runtime filepath manually')
     parser.add_argument('--time_decay', type=int, required=False,
-                        help="This parameter is ignored for the Cuckoo-based version")
-    
+                        help="Set time duration after which a connection decays automatically (i.e. both bloom filter registers should resetted twice)",
+                        default=20)
+    parser.add_argument('--file_suffix', type=str, required=False,
+                        help="Set the file suffix of the .p4 p4rt ... files to use",
+                        default="")
     # Parse the arguments
     args = parser.parse_args()
 
     # Access the arguments
-    delay = args.delay
-    if delay:
-        sleep(delay)
-    p4rt_path = args.p4rt
-    if p4rt_path:
-        DigestController(p4rt_path)
+    sleep(args.delay)
+    
+    if args.file_suffix:
+        file_suffix = "-" + args.file_suffix
     else:
-        DigestController()
+        file_suffix =  args.file_suffix
+        
+    if args.p4rt:
+        P4RuntimeController(file_suffix = file_suffix, p4rt_path = args.p4rt)
+    else:
+        P4RuntimeController(file_suffix = file_suffix)
 
 
 if __name__ == "__main__":

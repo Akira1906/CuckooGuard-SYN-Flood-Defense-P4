@@ -5,7 +5,7 @@ set -e # Exit on error
 
 cleanup() {
     sudo pkill --f simple_switch_grpc || true
-    sudo pkill -f controller_grpc_cuckoo.py || true
+    sudo pkill -f controller_grpc.py || true
     sudo pkill -2 -f tc_load.py || true
     sudo pkill -2 -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
@@ -113,7 +113,7 @@ echo "Attached eBPF programs to the server's interface ($BPFIFACE)"
 
 echo "Start SYN-Cookie Control Plane application"
 cd ../implementation
-python3 -u controller_grpc_cuckoo.py &> ../unit-test/controller-cuckoo.log &
+python3 -u controller_grpc.py --file_suffix cuckoo &> ../unit-test/controller-cuckoo.log &
 cd ../unit-test
 
 sleep 1

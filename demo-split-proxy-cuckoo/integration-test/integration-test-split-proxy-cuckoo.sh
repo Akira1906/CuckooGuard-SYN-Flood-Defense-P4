@@ -4,8 +4,8 @@ set -e # Exit on error
 # set -x # Debugging output
 
 cleanup() {
-    # sudo pkill --f simple_switch_grpc || true
-    sudo pkill -f controller_grpc_cuckoo.py || true
+    sudo pkill --f simple_switch_grpc || true
+    sudo pkill -f controller_grpc.py || true
     sudo pkill -2 -f tc_load.py || true
     sudo pkill -2 -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
@@ -28,7 +28,7 @@ P="$HOME/p4dev-python-venv/bin/python"
 
 
 echo "Start SYN-Cookie Control Plane application"
-python3 -u ../implementation/controller_grpc_cuckoo.py --delay 5 --p4rt p4src/split-proxy-cuckoo_p4rt.txt &> controller-cuckoo.log &
+python3 -u ../implementation/controller_grpc.py --delay 5 --p4rt p4src/split-proxy-cuckoo_p4rt.txt --file_suffix cuckoo &> controller-cuckoo.log &
 
 echo "Setup Mininet"
 sudo "${HOME}/p4dev-python-venv/bin/python" setup_mininet.py &

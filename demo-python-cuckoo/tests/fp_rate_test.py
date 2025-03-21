@@ -59,10 +59,10 @@ def main():
     packed_test = [pack_connection_tuple(*conn) for conn in test_set]
 
     false_positives = sum(1 for item in packed_test if filter.contains(item))
-    fp_rate = false_positives / args.n_hostile_test_packets
+    # fp_rate = false_positives / args.n_hostile_test_packets
 
     print("START RESULT")
-    print(fp_rate)
+    print(false_positives)
     print("END RESULT")
 
 

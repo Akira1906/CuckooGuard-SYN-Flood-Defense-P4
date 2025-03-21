@@ -83,8 +83,8 @@ class CuckooFilter:
 
     def index_hash(self, item):
         '''Calculate the (first) index of an item in the filter.'''
-        item_hash = zlib.crc32(item).to_bytes(4, byteorder='big')
-        index = int.from_bytes(item_hash, byteorder='big') % self.capacity
+        item_hash = zlib.crc32(item)
+        index = item_hash % self.capacity
         return index
 
     def calculate_index_pair(self, item, fingerprint):
@@ -103,8 +103,18 @@ class CuckooFilter:
         # item_hash = zlib.crc32(item).to_bytes(4, byteorder='big')
         # return item_hash[:self.fingerprint_size]
         item_hash = zlib.crc32(item)  # 32-bit unsigned int
-        fingerprint = item_hash & ((1 << self.fingerprint_size) - 1)
-        return fingerprint
+        fingerprint_bits = item_hash & ((1 << self.fingerprint_size) - 1)
+        
+        byte_length = (self.fingerprint_size + 7) // 8
+        
+        fp_bytes = fingerprint_bits.to_bytes(byte_length, byteorder='big')
+        if self.fingerprint_size % 8 != 0:
+            bits_to_keep = self.fingerprint_size % 8
+            fp_bytes = bytearray(fp_bytes)
+            fp_bytes[0] &= (0xFF >> (8 - bits_to_keep))
+            return bytes(fp_bytes)
+
+        return fp_bytes
 
     def load_factor(self):
         return self.size / (self.capacity * self.bucket_size)

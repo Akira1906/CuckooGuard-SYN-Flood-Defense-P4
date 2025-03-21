@@ -5,7 +5,7 @@ set -e # Exit on error
 
 cleanup() {
     # sudo pkill --f simple_switch_grpc || true
-    sudo pkill -f controller_grpc_crc.py || true
+    sudo pkill -f controller_grpc.py || true
     sudo pkill -2 -f tc_load.py || true
     sudo pkill -2 -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
@@ -20,15 +20,15 @@ trap cleanup EXIT
 sudo /bin/rm -f pcap/*
 /bin/rm -f server.log
 sudo /bin/rm -f log/*
-/bin/rm -f controller-crc.log
-/bin/rm -f ebpf-crc.log
+/bin/rm -f controller-part2.log
+/bin/rm -f ebpf-part2.log
 
 P="$HOME/p4dev-python-venv/bin/python"
 
 
 
 echo "Start SYN-Cookie Control Plane application"
-python3 -u ../implementation/controller_grpc_crc.py --delay 5 --p4rt p4src/split-proxy-crc_p4rt.txt &> controller-crc.log &
+python3 -u ../implementation/controller_grpc.py --delay 5 --p4rt p4src/split-proxy-part2_p4rt.txt &> controller-part2.log &
 
 echo "Setup Mininet"
 sudo "${HOME}/p4dev-python-venv/bin/python" setup_mininet.py &
@@ -38,7 +38,7 @@ echo "Initialize eBPF debugging"
 # Delete the existing BPF Map if it exists
 sudo rm -rf /sys/fs/bpf/my_nonpercpu_map
 # Start logging eBPF trace_pipe output to file
-sudo cat /sys/kernel/tracing/trace_pipe >> "ebpf-crc.log" 2>/dev/null &
+sudo cat /sys/kernel/tracing/trace_pipe >> "ebpf-part2.log" 2>/dev/null &
 
 sleep 1
 MN_SERVER_NS='mininet-server-namespace'

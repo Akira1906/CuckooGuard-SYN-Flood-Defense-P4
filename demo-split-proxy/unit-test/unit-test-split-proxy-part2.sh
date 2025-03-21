@@ -5,7 +5,7 @@ set -e # Exit on error
 
 cleanup() {
     sudo pkill --f simple_switch_grpc || true
-    sudo pkill -f controller_grpc_crc.py || true
+    sudo pkill -f controller_grpc.py || true
     sudo pkill -2 -f tc_load.py || true
     sudo pkill -2 -f xdp_load.py || true
     sudo pkill -f /sys/kernel/tracing/trace_pipe || true
@@ -76,18 +76,18 @@ sudo sysctl net.ipv6.conf.veth7.disable_ipv6=1
 # Compile P4 Program
 p4c --target bmv2 \
     --arch v1model \
-    --p4runtime-files ../implementation/p4src/split-proxy-crc.p4info.txtpb \
-    ../implementation/p4src/split-proxy-crc.p4\
+    --p4runtime-files ../implementation/p4src/split-proxy-part2.p4info.txtpb \
+    ../implementation/p4src/split-proxy-part2.p4\
     -o ../implementation/p4src/
 
 # Remove old log file
 
-/bin/rm -f split-proxy-crc-log.txt
-/bin/rm -f ebpf-crc.log
+/bin/rm -f split-proxy-part2-log.txt
+/bin/rm -f ebpf-part2.log
 
 sudo simple_switch_grpc \
      --device-id 1 \
-     --log-file split-proxy-crc-log \
+     --log-file split-proxy-part2-log \
      --log-flush \
      --dump-packet-data 10000 \
      -i 1@veth0 \
@@ -125,14 +125,14 @@ sudo /bin/python3 ../implementation/ebpf/xdp_load.py None "$BPFIFACE" &
 sleep 1
 
 # Start logging eBPF trace_pipe output to file
-sudo cat /sys/kernel/tracing/trace_pipe >> "ebpf-crc.log" 2>/dev/null &
+sudo cat /sys/kernel/tracing/trace_pipe >> "ebpf-part2.log" 2>/dev/null &
 
 echo "Attached eBPF programs to the server's interface ($BPFIFACE)"
 
 
 echo "Start SYN-Cookie Control Plane application"
 cd ../implementation
-python3 -u controller_grpc_crc.py &> ../unit-test/controller-crc.log &
+python3 -u controller_grpc.py &> ../unit-test/controller-part2.log &
 cd ../unit-test
 
 sleep 1
@@ -149,7 +149,7 @@ sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
     -i 2@veth3 \
     -i 3@veth5 \
     -i 4@veth4 \
-    --test-params="grpcaddr='localhost:9559';p4info='../implementation/p4src/split-proxy-crc.p4info.txtpb';config='../implementation/p4src/split-proxy-crc.json'" \
+    --test-params="grpcaddr='localhost:9559';p4info='../implementation/p4src/split-proxy-part2.p4info.txtpb';config='../implementation/p4src/split-proxy-part2.json'" \
     --test-dir ptf
 
 echo "PTF test finished.  Waiting 2 seconds before cleanup"

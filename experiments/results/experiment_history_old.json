@@ -1,0 +1,287 @@
+[
+  {
+    "timestamp": "2025-03-21 09:30:35",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 431,
+      "fp_rate": 0.0200275
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 29,
+      "fp_rate": 0.00393611,
+      "fp_rate_ss": 0.00196806
+    }
+  },
+  {
+    "timestamp": "2025-03-21 09:37:37",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 366,
+      "fp_rate": 0.0183
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 44,
+      "fp_rate": 0.0022,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 09:45:22",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 0,
+      "fp_rate": 0,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 10:03:29",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 413,
+      "fp_rate": 0.02065
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 45,
+      "fp_rate": 0.00225,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 10:37:30",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 413,
+      "fp_rate": 0.02065
+    },
+    "cuckoo": {
+      "fingerprint_size": 8,
+      "n_buckets": 2048,
+      "n_fingerprints": 8192,
+      "fp_hits": 454,
+      "fp_rate": 0.0227,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 10:38:34",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 413,
+      "fp_rate": 0.02065
+    },
+    "cuckoo": {
+      "fingerprint_size": 9,
+      "n_buckets": 1820,
+      "n_fingerprints": 7280,
+      "fp_hits": 254,
+      "fp_rate": 0.0127,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 10:43:41",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 413,
+      "fp_rate": 0.02065
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 36,
+      "fp_rate": 0.0018,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 11:27:27",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 350,
+      "fp_rate": 0.0175
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 43,
+      "fp_rate": 0.00215,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 11:29:32",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 382,
+      "fp_rate": 0.0191
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 41,
+      "fp_rate": 0.00205,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 11:31:26",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 391,
+      "fp_rate": 0.01955
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 40,
+      "fp_rate": 0.002,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 11:34:18",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 384,
+      "fp_rate": 0.0192
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 44,
+      "fp_rate": 0.0022,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 14:54:45",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 30000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 616,
+      "fp_rate": 0.0205333
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 51,
+      "fp_rate": 0.0017,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 16:32:21",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 20000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 380,
+      "fp_rate": 0.019
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 50,
+      "fp_rate": 0.0025,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 16:49:31",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 30000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 651,
+      "fp_rate": 0.0217
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 59,
+      "fp_rate": 0.00196667,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-21 16:52:48",
+    "available_memory_bit": 65536,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom": {
+      "size_bits": 32768,
+      "fp_hits": 2000,
+      "fp_rate": 0.02
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1365,
+      "n_fingerprints": 5460,
+      "fp_hits": 199,
+      "fp_rate": 0.00199,
+      "fp_rate_ss": 0
+    }
+  }
+]

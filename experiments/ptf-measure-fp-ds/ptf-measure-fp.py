@@ -147,7 +147,7 @@ class FPTest(Test):
         
         # catch packets that went through in a delayed manner
         while(True):
-            count_packets = tu.count_matched_packets(self, get_packet_mask(ack_pkt), self.ebpf_iface)
+            count_packets = tu.count_matched_packets(self, get_packet_mask(ack_pkt), self.ebpf_iface, timeout=0.5)
             print(f"processing overflow: #{count_packets}")
             if count_packets == 0:
                 break
