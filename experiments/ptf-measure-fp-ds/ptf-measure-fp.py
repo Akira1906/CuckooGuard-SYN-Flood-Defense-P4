@@ -131,7 +131,7 @@ class FPTest(Test):
 
         for i, connection in enumerate(test_connections):
             client_ip, client_port = connection
-            print(f"test {i}")
+            # print(f"test {i}")
             # send test packet to P4 and check if filter mistakenly let the packet through
             tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
             ack_pkt = (
@@ -142,7 +142,7 @@ class FPTest(Test):
             )
             tu.send_packet(self, self.client_iface, ack_pkt)
             
-            if i % 100 == 0:
+            if i % 200 == 0:
                 n_false_positives += tu.count_matched_packets(self, get_packet_mask(ack_pkt), self.ebpf_iface, timeout=self.packet_processing_delay)
         
         # catch packets that went through in a delayed manner
