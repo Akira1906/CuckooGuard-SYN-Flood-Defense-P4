@@ -1,10 +1,18 @@
 #!/bin/bash
 
-# New global experiment parameters
-AVAILABLE_MEMORY_BIT=65536
-N_BENIGN_CONNECTIONS=5000
-N_HOSTILE_TEST_PACKETS=100000
-ALWAYS_RETEST="False"
+# Global experiment parameters
+    AVAILABLE_MEMORY_BIT=84227
+    N_BENIGN_CONNECTIONS=5000
+    N_HOSTILE_TEST_PACKETS=40000
+    ALWAYS_RETEST=false
+
+    run_bloom_part1=false
+    run_bloom_part2=false
+    run_bloom_part3=false
+    run_varbloom=true
+    run_varbloom_time_decay=true
+    run_cuckoo=true
+    
 
 # Process named arguments
     ARGS=$(getopt -o c:h:m:r: --long \
@@ -30,143 +38,213 @@ ALWAYS_RETEST="False"
     done
 
 
-save_experiment_json() {
-    results_json="results/experiment_history.json"
+# Helper Functions
 
-    # Create new experiment entry
-    new_entry=$(jq -n \
-        --arg timestamp "$(date +"%Y-%m-%d %H:%M:%S")" \
-        --arg available_memory_bit "$AVAILABLE_MEMORY_BIT" \
-        --arg n_benign_connections "$N_BENIGN_CONNECTIONS" \
-        --arg n_hostile_test_packets "$N_HOSTILE_TEST_PACKETS" \
-        --arg bloom_size_part_2 "$bloom_size_part_2" \
-        --arg bloom_size_part_3 "$bloom_size_part_3" \
-        --arg bloom_size_std "$bloom_size_std" \
-        --arg fp_hits_bloom_part_2 "$fp_hits_bloom_part_2" \
-        --arg fp_hits_bloom_part_3 "$fp_hits_bloom_part_3" \
-        --arg fp_hits_bloom_std "$fp_hits_bloom_std" \
-        --arg fp_hits_cuckoo "$fp_hits_cuckoo" \
-        --arg exp_fp_rate_bloom_part_2 "$exp_fp_rate_bloom_part_2" \
-        --arg exp_fp_rate_bloom_part_3 "$exp_fp_rate_bloom_part_3" \
-        --arg exp_fp_rate_bloom_std "$exp_fp_rate_bloom_std" \
-        --arg exp_fp_rate_cuckoo "$exp_fp_rate_cuckoo" \
-        --arg exp_fp_rate_cuckoo_ss "$exp_fp_rate_cuckoo_ss" \
-        --arg fingerprint_size "$fingerprint_size" \
-        --arg n_buckets "$n_buckets" \
-        --arg n_fingerprints "$n_fingerprints" \
-        '{
-            "timestamp": $timestamp,
-            "available_memory_bit": $available_memory_bit | tonumber,
-            "n_benign_connections": $n_benign_connections | tonumber,
-            "n_hostile_test_packets": $n_hostile_test_packets | tonumber,
-            "bloom_part_2": {
-                "size_bits": $bloom_size_part_2 | tonumber,
-                "fp_hits": $fp_hits_bloom_part_2 | tonumber,
-                "fp_rate": $exp_fp_rate_bloom_part_2 | tonumber
-            },
-            "bloom_part_3": {
-                "size_bits": $bloom_size_part_3 | tonumber,
-                "fp_hits": $fp_hits_bloom_part_3 | tonumber,
-                "fp_rate": $exp_fp_rate_bloom_part_3 | tonumber
-            },
-            "bloom_std": {
-                "size_bits": $bloom_size_std | tonumber,
-                "fp_hits": $fp_hits_bloom_std | tonumber,
-                "fp_rate": $exp_fp_rate_bloom_std | tonumber
-            },
-            "cuckoo": {
-                "fingerprint_size": $fingerprint_size | tonumber,
-                "n_buckets": $n_buckets | tonumber,
-                "n_fingerprints": $n_fingerprints | tonumber,
-                "fp_hits": $fp_hits_cuckoo | tonumber,
-                "fp_rate": $exp_fp_rate_cuckoo | tonumber,
-                "fp_rate_ss": $exp_fp_rate_cuckoo_ss | tonumber
-            }
-        }')
+    save_experiment_json() {
+        results_json="results/experiment_history.json"
 
-    # Check if history file exists
-    if [ -f "$results_json" ]; then
-        # Append new entry to existing JSON array
-        jq --argjson new_entry "$new_entry" '. + [$new_entry]' "$results_json" > "$results_json.tmp" && mv "$results_json.tmp" "$results_json"
-    else
-        # Create a new JSON array with the first experiment entry
-        echo "[$new_entry]" > "$results_json"
-    fi
+        # Create new experiment entry
+        new_entry=$(jq -n \
+            --arg timestamp "$(date +"%Y-%m-%d %H:%M:%S")" \
+            --arg available_memory_bit "$AVAILABLE_MEMORY_BIT" \
+            --arg n_benign_connections "$N_BENIGN_CONNECTIONS" \
+            --arg n_hostile_test_packets "$N_HOSTILE_TEST_PACKETS" \
+            --arg bloom_size_part_2 "$bloom_size_part_2" \
+            --arg bloom_size_part_3 "$bloom_size_part_3" \
+            --arg bloom_size_std "$bloom_size_std" \
+            --arg varbloom_size "$varbloom_size" \
+            --arg varbloom_time_decay_size "$varbloom_time_decay_size" \
+            --arg fp_hits_bloom_part_2 "$fp_hits_bloom_part_2" \
+            --arg fp_hits_bloom_part_3 "$fp_hits_bloom_part_3" \
+            --arg fp_hits_bloom_std "$fp_hits_bloom_std" \
+            --arg fp_hits_varbloom "$fp_hits_varbloom" \
+            --arg fp_hits_varbloom_time_decay "$fp_hits_varbloom_time_decay" \
+            --arg fp_hits_cuckoo "$fp_hits_cuckoo" \
+            --arg exp_fp_rate_bloom_part_2 "$exp_fp_rate_bloom_part_2" \
+            --arg exp_fp_rate_bloom_part_3 "$exp_fp_rate_bloom_part_3" \
+            --arg exp_fp_rate_bloom_std "$exp_fp_rate_bloom_std" \
+            --arg exp_fp_rate_varbloom "$exp_fp_rate_varbloom" \
+            --arg exp_fp_rate_varbloom_time_decay "$exp_fp_rate_varbloom_time_decay" \
+            --arg exp_fp_rate_cuckoo "$exp_fp_rate_cuckoo" \
+            --arg exp_fp_rate_cuckoo_ss "$exp_fp_rate_cuckoo_ss" \
+            --arg fingerprint_size "$fingerprint_size" \
+            --arg n_buckets "$n_buckets" \
+            --arg n_fingerprints "$n_fingerprints" \
+            '{
+                "timestamp": $timestamp,
+                "available_memory_bit": $available_memory_bit | tonumber,
+                "n_benign_connections": $n_benign_connections | tonumber,
+                "n_hostile_test_packets": $n_hostile_test_packets | tonumber,
+                "bloom_part_2": {
+                    "size_bits": $bloom_size_part_2 | tonumber,
+                    "fp_hits": $fp_hits_bloom_part_2 | tonumber,
+                    "fp_rate": $exp_fp_rate_bloom_part_2 | tonumber
+                },
+                "bloom_part_3": {
+                    "size_bits": $bloom_size_part_3 | tonumber,
+                    "fp_hits": $fp_hits_bloom_part_3 | tonumber,
+                    "fp_rate": $exp_fp_rate_bloom_part_3 | tonumber
+                },
+                "bloom_std": {
+                    "size_bits": $bloom_size_std | tonumber,
+                    "fp_hits": $fp_hits_bloom_std | tonumber,
+                    "fp_rate": $exp_fp_rate_bloom_std | tonumber
+                },
+                "varbloom": {
+                    "size_bits": $varbloom_size | tonumber,
+                    "fp_hits": $fp_hits_varbloom | tonumber,
+                    "fp_rate": $exp_fp_rate_varbloom | tonumber
+                },
+                "varbloom_time_decay": {
+                    "size_bits": $varbloom_time_decay_size | tonumber,
+                    "fp_hits": $fp_hits_varbloom_time_decay | tonumber,
+                    "fp_rate": $exp_fp_rate_varbloom_time_decay | tonumber
+                },
+                "cuckoo": {
+                    "fingerprint_size": $fingerprint_size | tonumber,
+                    "n_buckets": $n_buckets | tonumber,
+                    "n_fingerprints": $n_fingerprints | tonumber,
+                    "fp_hits": $fp_hits_cuckoo | tonumber,
+                    "fp_rate": $exp_fp_rate_cuckoo | tonumber,
+                    "fp_rate_ss": $exp_fp_rate_cuckoo_ss | tonumber
+                }
+            }')
 
-    echo "✅ Experiment saved to $results_json"
-}
+        # Check if history file exists
+        if [ -f "$results_json" ]; then
+            # Append new entry to existing JSON array
+            jq --argjson new_entry "$new_entry" '. + [$new_entry]' "$results_json" > "$results_json.tmp" && mv "$results_json.tmp" "$results_json"
+        else
+            # Create a new JSON array with the first experiment entry
+            echo "[$new_entry]" > "$results_json"
+        fi
 
-should_rerun_experiment() {
-    # this function should not be executed in a subshell
-    local filter_type="$1"
-    results_json="results/experiment_history.json"
+        echo "✅ Experiment saved to $results_json"
+    }
 
-    # Default: Run the experiment
-    should_rerun=true
+    should_rerun_experiment() {
+        # this function should not be executed in a subshell
+        local filter_type="$1"
+        results_json="results/experiment_history.json"
 
-    if [ -f "$results_json" ]; then
-        last_exp=$(jq '.[-1]' "$results_json")
+        # Default: Run the experiment
+        should_rerun=true
 
-        last_available_memory_bit=$(echo "$last_exp" | jq '.available_memory_bit')
-        last_n_benign_connections=$(echo "$last_exp" | jq '.n_benign_connections')
-        last_n_hostile_test_packets=$(echo "$last_exp" | jq '.n_hostile_test_packets')
+        if [ -f "$results_json" ]; then
+            last_exp=$(jq '.[-1]' "$results_json")
 
-        if [[ "$last_available_memory_bit" == "$AVAILABLE_MEMORY_BIT" &&
-              "$last_n_benign_connections" ==  "$N_BENIGN_CONNECTIONS" &&
-              "$last_n_hostile_test_packets" == "$N_HOSTILE_TEST_PACKETS" ]]; then
-                echo "global parameters the same"
-            if [[ "$filter_type" == "bloom_part_2" ]]; then
-                last_bloom_size_part_3=$(echo "$last_exp" | jq '.bloom_part_2.size_bits')
-                
-                if [[ "$last_bloom_size_part_3" == "$bloom_size_part_2" && "$ALWAYS_RETEST" == "False" ]]; then
-                    echo "⚠️  Bloom Filter parameters unchanged — skipping test."
-                    should_rerun=false
-                    fp_hits_bloom_part_2=$(echo "$last_exp" | jq '.bloom_part_2.fp_hits')
-                fi
+            last_available_memory_bit=$(echo "$last_exp" | jq '.available_memory_bit')
+            last_n_benign_connections=$(echo "$last_exp" | jq '.n_benign_connections')
+            last_n_hostile_test_packets=$(echo "$last_exp" | jq '.n_hostile_test_packets')
 
-            elif [[ "$filter_type" == "cuckoo" ]]; then
-                last_cuckoo_fpsize=$(echo "$last_exp" | jq '.cuckoo.fingerprint_size')
-                last_cuckoo_buckets=$(echo "$last_exp" | jq '.cuckoo.n_buckets')
+            if [[ "$last_available_memory_bit" == "$AVAILABLE_MEMORY_BIT" &&
+                "$last_n_benign_connections" ==  "$N_BENIGN_CONNECTIONS" &&
+                "$last_n_hostile_test_packets" == "$N_HOSTILE_TEST_PACKETS" ]]; then
+                    echo "global parameters the same"
+                if [[ "$filter_type" == "bloom_part_2" ]]; then
+                    last_bloom_size_part_2=$(echo "$last_exp" | jq '.bloom_part_2.size_bits')
+                    
+                    if [[ "$last_bloom_size_part_2" == "$bloom_size_part_2" && "$ALWAYS_RETEST" == "false" && "$run_bloom_part2" == "false" ]]; then
+                        echo "⚠️  Bloom Filter parameters unchanged — skipping test."
+                        should_rerun=false
+                        fp_hits_bloom_part_2=$(echo "$last_exp" | jq '.bloom_part_2.fp_hits')
+                    fi
 
-                if [[ "$last_cuckoo_fpsize" == "$fingerprint_size" &&
-                    "$last_cuckoo_buckets" == "$n_buckets" &&
-                    "$ALWAYS_RETEST" == "False" ]]; then
-                    echo "⚠️  Cuckoo Filter parameters unchanged — skipping test."
-                    should_rerun=false
-                    fp_hits_cuckoo=$(echo "$last_exp" | jq '.cuckoo.fp_hits')
-                fi
-            elif [[ "$filter_type" == "bloom_part_3" ]]; then
-                last_bloom_size_part_3=$(echo "$last_exp" | jq '.bloom_part_3.size_bits')
-                
-                if [[ "$last_bloom_size_part_3" == "$bloom_size_part_3" && "$ALWAYS_RETEST" == "False" ]]; then
-                    echo "⚠️  Bloom Filter (Part 3) parameters unchanged — skipping test."
-                    should_rerun=false
-                    fp_hits_bloom_part_3=$(echo "$last_exp" | jq '.bloom_part_3.fp_hits')
-                fi
+                elif [[ "$filter_type" == "cuckoo" ]]; then
+                    last_cuckoo_fpsize=$(echo "$last_exp" | jq '.cuckoo.fingerprint_size')
+                    last_cuckoo_buckets=$(echo "$last_exp" | jq '.cuckoo.n_buckets')
 
-            elif [[ "$filter_type" == "bloom_std" ]]; then
-                last_bloom_size_std=$(echo "$last_exp" | jq '.bloom_std.size_bits')
-                
-                if [[ "$last_bloom_size_std" == "$bloom_size_std" && "$ALWAYS_RETEST" == "False" ]]; then
-                    echo "⚠️  Bloom Filter (Standard) parameters unchanged — skipping test."
-                    should_rerun=false
-                    fp_hits_bloom_std=$(echo "$last_exp" | jq '.bloom_std.fp_hits')
+                    if [[ "$last_cuckoo_fpsize" == "$fingerprint_size" &&
+                        "$last_cuckoo_buckets" == "$n_buckets" &&
+                        "$ALWAYS_RETEST" == "false"  && "$run_cuckoo" == "false" ]]; then
+                        echo "⚠️  Cuckoo Filter parameters unchanged — skipping test."
+                        should_rerun=false
+                        fp_hits_cuckoo=$(echo "$last_exp" | jq '.cuckoo.fp_hits')
+                    fi
+                elif [[ "$filter_type" == "bloom_part_3" ]]; then
+                    last_bloom_size_part_3=$(echo "$last_exp" | jq '.bloom_part_3.size_bits')
+                    
+                    if [[ "$last_bloom_size_part_3" == "$bloom_size_part_3" && "$ALWAYS_RETEST" == "false"  && "$run_bloom_part3" == "false" ]]; then
+                        echo "⚠️  Bloom Filter (Part 3) parameters unchanged — skipping test."
+                        should_rerun=false
+                        fp_hits_bloom_part_3=$(echo "$last_exp" | jq '.bloom_part_3.fp_hits')
+                    fi
+
+                elif [[ "$filter_type" == "bloom_std" ]]; then
+                    last_bloom_size_std=$(echo "$last_exp" | jq '.bloom_std.size_bits')
+                    
+                    if [[ "$last_bloom_size_std" == "$bloom_size_std" && "$ALWAYS_RETEST" == "false"  && "$run_bloom_part1" == "false" ]]; then
+                        echo "⚠️  Bloom Filter (Part 1) parameters unchanged — skipping test."
+                        should_rerun=false
+                        fp_hits_bloom_std=$(echo "$last_exp" | jq '.bloom_std.fp_hits')
+                    fi
+                elif [[ "$filter_type" == "varbloom" ]]; then
+                    last_varbloom_size=$(echo "$last_exp" | jq '.varbloom.size_bits')
+                    
+                    if [[ "$last_varbloom_size" == "$varbloom_size" && "$ALWAYS_RETEST" == "false"  && "$run_varbloom" == "false" ]]; then
+                        echo "⚠️  VarBloom Filter parameters unchanged — skipping test."
+                        should_rerun=false
+                        fp_hits_varbloom=$(echo "$last_exp" | jq '.varbloom.fp_hits')
+                    fi
+                elif [[ "$filter_type" == "varbloom_time_decay" ]]; then
+                    last_varbloom_time_decay_size=$(echo "$last_exp" | jq '.varbloom_time_decay.size_bits')
+                    
+                    if [[ "$last_varbloom_time_decay_size" == "$varbloom_time_decay_size" && "$ALWAYS_RETEST" == "false"  && "$run_varbloom_time_decay" == "false" ]]; then
+                        echo "⚠️  VarBloom Time-Decay Filter parameters unchanged — skipping test."
+                        should_rerun=false
+                        fp_hits_varbloom_time_decay=$(echo "$last_exp" | jq '.varbloom_time_decay.fp_hits')
+                    fi
                 fi
             fi
+            
         fi
-        
-    fi
 
-    if [ "$should_rerun" == "true" ]; then
-        ran_experiment=true
-    fi
+        if [ "$should_rerun" == "true" ]; then
+            ran_experiment=true
+        fi
 
-}
+    }
+
 
 # This script runs the analyze-split-proxy-ds.sh script for each solution to be tested,
 # then analyzes the test results and generates a figure using a Python script.
 
 # parameters of the P4 implementation can be changed via arguments to analyze-splix-proxy-ds.sh
+
+# Initialize Experiment Results to zero
+    fp_hits_bloom_part_2=0
+    fp_hits_bloom_part_3=0
+    fp_hits_bloom_std=0
+    fp_hits_varbloom=0
+    fp_hits_varbloom_time_decay=0
+    fp_hits_cuckoo=0
+
+# Bloom Filter (Partitioned with 1 stage)
+    bloom_size_std=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT)}")
+
+    echo "----------------------------------"
+    echo "Computed Bloom Filter (Part 1) Parameters:"
+    echo "  - Available Memory: $AVAILABLE_MEMORY_BIT bits"
+    echo "  - Bloom Filter Size: $bloom_size_std bits"
+    echo "----------------------------------"
+
+    should_rerun_experiment "bloom_std"
+    if [[ "$should_rerun" == "true" && "$run_bloom_part1" == "true" ]]; then
+        echo "Running Bloom Filter (Part 1) experiment..."
+        ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix part1 \
+            --fp_test ptf-measure-fp-ds --test_name bloom_std_fp_test \
+            --filter_size $bloom_size_std \
+            --fingerprint_size 0 \
+            --n_buckets 0 \
+            --n_benign_connections $N_BENIGN_CONNECTIONS \
+            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            > results/fp_bloom_std_results.txt
+
+        fp_hits_bloom_std=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_bloom_std_results.txt)
+    else
+        echo "Using cached Bloom Filter (Part 1) results"
+    fi
+
 
 # Bloom Filter (Partitioned with 2 stages):
     bloom_size_part_2=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / 2)}")
@@ -179,7 +257,7 @@ should_rerun_experiment() {
 
     # Run the analysis for the Bloom Filter-based solution
     should_rerun_experiment "bloom_part_2"
-    if [[ "$should_rerun" == "true" ]]; then
+    if [[ "$should_rerun" == "true" && "$run_bloom_part2" == "true" ]]; then
         echo "Running Bloom Filter (Part 2) experiment..."
         ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix part2 \
             --fp_test ptf-measure-fp-ds --test_name bloom_part_2_fp_test \
@@ -207,7 +285,7 @@ should_rerun_experiment() {
 
     should_rerun_experiment "bloom_part_3"
     # should_rerun="true"
-    if [[ "$should_rerun" == "true" ]]; then
+    if [[ "$should_rerun" == "true" && "$run_bloom_part3" == "true" ]]; then
         echo "Running Bloom Filter (Part 3) experiment..."
         ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix part3 \
             --fp_test ptf-measure-fp-ds --test_name bloom_part_3_fp_test \
@@ -223,30 +301,114 @@ should_rerun_experiment() {
         echo "Using cached Bloom Filter (Part 3) results"
     fi
 
-# Bloom Filter (Standard)
-    bloom_size_std=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT)}")
 
+# VarBloom Filter: compute local test parameters
+    varbloom_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT)}")
+    hash_k=9
+
+    get_best_k() {
+        local m="$AVAILABLE_MEMORY_BIT"  # AVAILABLE_MEMORY_BIT
+        local n="$N_BENIGN_CONNECTIONS"  # N_BENIGN_CONNECTIONS
+
+        best_k=-1
+        best_fp=1  # start with worst possible FP rate (100%)
+
+        for k in {1..30}; do
+            fp=$(awk -v m="$m" -v n="$n" -v k="$k" 'BEGIN {
+                p = (1 - (1 / m));
+                pow_inner = p^(k * n);
+                fp_rate = (1 - pow_inner)^k;
+                print fp_rate
+            }')
+
+            if awk "BEGIN {exit ($fp < $best_fp) ? 0 : 1}"; then
+                best_fp="$fp"
+                best_k="$k"
+            fi
+        done
+
+        echo "$best_k"
+        }
+    
+    hash_k=$(get_best_k) 
+    
     echo "----------------------------------"
-    echo "Computed Bloom Filter (Standard) Parameters:"
+    echo "Computed VarBloom Filter Parameters:"
     echo "  - Available Memory: $AVAILABLE_MEMORY_BIT bits"
-    echo "  - Bloom Filter Size: $bloom_size_std bits"
+    echo "  - VarBloom Filter Size: $varbloom_size bits"
+    echo "  - Ideal k: $hash_k"
     echo "----------------------------------"
 
-    should_rerun_experiment "bloom_std"
-    if [[ "$should_rerun" == "true" ]]; then
-        echo "Running Bloom Filter (Standard) experiment..."
-        ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix part1 \
-            --fp_test ptf-measure-fp-ds --test_name bloom_std_fp_test \
-            --filter_size $bloom_size_std \
+    should_rerun_experiment "varbloom"
+    if [[ "$should_rerun" == "true" && "$run_varbloom" == "true" ]]; then
+        echo "Running VarBloom Filter experiment..."
+        ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix varbloom \
+            --fp_test ptf-measure-fp-ds --test_name varbloom_fp_test \
+            --filter_size $varbloom_size \
             --fingerprint_size 0 \
-            --n_buckets 0 \
+            --n_buckets $hash_k \
             --n_benign_connections $N_BENIGN_CONNECTIONS \
             --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
-            > results/fp_bloom_std_results.txt
+            > results/fp_varbloom_results.txt
 
-        fp_hits_bloom_std=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_bloom_std_results.txt)
+        fp_hits_varbloom=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_varbloom_results.txt)
     else
-        echo "Using cached Bloom Filter (Standard) results"
+        echo "Using cached VarBloom Filter results"
+    fi
+
+
+# VarBloom Time-Decay Filter: compute local test parameters
+    varbloom_time_decay_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / 2)}")
+    hash_k_time_decay=9
+
+    get_best_k_time_decay() {
+        local m="$varbloom_time_decay_size"  # Half of AVAILABLE_MEMORY_BIT
+        local n="$N_BENIGN_CONNECTIONS"      # N_BENIGN_CONNECTIONS
+
+        best_k=-1
+        best_fp=1  # start with worst possible FP rate (100%)
+
+        for k in {1..30}; do
+            fp=$(awk -v m="$m" -v n="$n" -v k="$k" 'BEGIN {
+                p = (1 - (1 / m));
+                pow_inner = p^(k * n);
+                fp_rate = (1 - pow_inner)^k;
+                print fp_rate
+            }')
+
+            if awk "BEGIN {exit ($fp < $best_fp) ? 0 : 1}"; then
+                best_fp="$fp"
+                best_k="$k"
+            fi
+        done
+
+        echo "$best_k"
+    }
+
+    hash_k_time_decay=$(get_best_k_time_decay)
+
+    echo "----------------------------------"
+    echo "Computed VarBloom Time-Decay Filter Parameters:"
+    echo "  - Available Memory: $varbloom_time_decay_size bits"
+    echo "  - VarBloom Filter Size: $varbloom_time_decay_size bits"
+    echo "  - Ideal k: $hash_k_time_decay"
+    echo "----------------------------------"
+
+    should_rerun_experiment "varbloom_time_decay"
+    if [[ "$should_rerun" == "true" && "$run_varbloom_time_decay" == "true" ]]; then
+        echo "Running VarBloom Time-Decay Filter experiment..."
+        ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix varbloom \
+            --fp_test ptf-measure-fp-ds --test_name varbloom_time_decay_fp_test \
+            --filter_size $varbloom_time_decay_size \
+            --fingerprint_size 0 \
+            --n_buckets $hash_k_time_decay \
+            --n_benign_connections $N_BENIGN_CONNECTIONS \
+            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            > results/fp_varbloom_time_decay_results.txt
+
+        fp_hits_varbloom_time_decay=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_varbloom_time_decay_results.txt)
+    else
+        echo "Using cached VarBloom Time-Decay Filter results"
     fi
 
 
@@ -259,6 +421,16 @@ should_rerun_experiment() {
     min_needed_empty_spaces=$(awk "BEGIN {print int($n / $a)}")
     # Compute fingerprint size (round down)
     fingerprint_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / $min_needed_empty_spaces)}")
+    # # fingerprint_size=$(bits per item * 0.95)
+    # e=0.0001
+    # result=$(awk -v a="$a" 'BEGIN {
+    # log2_1_over_e = log(1/e) / log(2);  # log2(1/e)
+    # result = (log2_1_over_e + 3);
+    # print result
+    # }')
+    # echo "Result: $result"
+
+    # $(awk -v a="$a" 'BEGIN {print(log(1/0.0001) / log(2)) }')
 
     # Compute number of buckets (round down)
     n_buckets=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / ($fingerprint_size * $b))}")
@@ -266,6 +438,10 @@ should_rerun_experiment() {
 
     # Compute total number of fingerprints
     n_fingerprints=$(awk "BEGIN {print int($n_buckets * $b)}")
+
+    # Compute theoretical perfect amount of memory to achieve a=0.95
+    ideal_fingerprint_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / $min_needed_empty_spaces)}")
+    ideal_memory_bit=$(awk "BEGIN {print int(($n / $a) * $fingerprint_size)}")
 
     echo "----------------------------------"
     echo "Computed Cuckoo Filter Parameters:"
@@ -276,10 +452,12 @@ should_rerun_experiment() {
     echo "  - Fingerprint Size: $fingerprint_size bits"
     echo "  - Number of Buckets: $n_buckets"
     echo "  - Total Number of Fingerprints: $n_fingerprints"
+    echo "  - Theoretical Ideal Memory: $ideal_memory_bit bits"
+    echo "  - Theoretical Ideal Fingerprint Size: $ideal_fingerprint_size bits"
     echo "----------------------------------"
 
     should_rerun_experiment "cuckoo"
-    if [[ "$should_rerun" == "true" ]]; then
+    if [[ "$should_rerun" == "true" && "$run_cuckoo" == "true" ]]; then
         echo "Running Cuckoo Filter experiment..."
         # Run the analysis for the Cuckoo-based solution
         ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy-cuckoo" --fn_suffix cuckoo \
@@ -308,38 +486,59 @@ should_rerun_experiment() {
     fp_hits_cuckoo_py=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_cucko_py_results.txt)
 
 
-
-
 # Calculate the experimental FP rates
     exp_fp_rate_bloom_part_2=$(awk "BEGIN {print ($fp_hits_bloom_part_2 / ($N_HOSTILE_TEST_PACKETS))}")
     exp_fp_rate_bloom_part_3=$(awk "BEGIN {print ($fp_hits_bloom_part_3 / ($N_HOSTILE_TEST_PACKETS))}")
     exp_fp_rate_bloom_std=$(awk "BEGIN {print ($fp_hits_bloom_std / ($N_HOSTILE_TEST_PACKETS))}")
+    exp_fp_rate_varbloom=$(awk "BEGIN {print ($fp_hits_varbloom / ($N_HOSTILE_TEST_PACKETS))}")
+    exp_fp_rate_varbloom_time_decay=$(awk "BEGIN {print ($fp_hits_varbloom_time_decay / ($N_HOSTILE_TEST_PACKETS))}")
     exp_fp_rate_cuckoo=$(awk "BEGIN {print ($fp_hits_cuckoo / ($N_HOSTILE_TEST_PACKETS))}")
     exp_fp_rate_cuckoo_ss=0
     exp_fp_rate_cuckoo_py=$(awk "BEGIN {print ($fp_hits_cuckoo_py / ($N_HOSTILE_TEST_PACKETS))}")
 
 
-# Calculation of the expected theoretical exact ideal FP rates
+# Calculation of the theoretical exact ideal FP rates
 
     # Partitioned Bloom Filter with 2 stages
     theo_fp_rate_bloom_part_2=$(awk -v m="$AVAILABLE_MEMORY_BIT" -v n="$N_BENIGN_CONNECTIONS" -v k="2" '
     BEGIN {
-        exp_fp_rate = (1 - (1 - k / m) ^ n) ^ k;
-        print exp_fp_rate;
+        theo_fp_rate = (1 - (1 - k / m) ^ n) ^ k;
+        print theo_fp_rate;
     }')
 
     # Partitioned Bloom Filter with 3 stages
     theo_fp_rate_bloom_part_3=$(awk -v m="$AVAILABLE_MEMORY_BIT" -v n="$N_BENIGN_CONNECTIONS" -v k="3" '
     BEGIN {
-        exp_fp_rate = (1 - (1 - k / m) ^ n) ^ k;
-        print exp_fp_rate;
+        theo_fp_rate = (1 - (1 - k / m) ^ n) ^ k;
+        print theo_fp_rate;
     }')
 
     # Standard Bloom Filter
     theo_fp_rate_bloom_std=$(awk -v m="$AVAILABLE_MEMORY_BIT" -v n="$N_BENIGN_CONNECTIONS" -v k="1" '
     BEGIN {
-        exp_fp_rate = (1 - (1 - k / m) ^ n) ^ k;
-        print exp_fp_rate;
+        theo_fp_rate = (1 - (1 - k / m) ^ n) ^ k;
+        print theo_fp_rate;
+    }')
+
+    # VarBloom Filter
+    theo_fp_rate_varbloom=$(awk -v m="$AVAILABLE_MEMORY_BIT" -v n="$N_BENIGN_CONNECTIONS" -v k=$hash_k '
+    BEGIN {
+        theo_fp_rate = (1 - ((1 - (1 / m)) ^ (k * n))) ^ k;
+        print theo_fp_rate;
+    }')
+
+    #Var Partitioned Bloom Filter
+    theo_fp_rate_bloom_part_k=$(awk -v m="$AVAILABLE_MEMORY_BIT" -v n="$N_BENIGN_CONNECTIONS" -v k=$hash_k '
+    BEGIN {
+        theo_fp_rate = (1 - (1 - k / m) ^ n) ^ k;
+        print theo_fp_rate;
+    }')
+
+    # VarBloom Time-Decay Filter
+    theo_fp_rate_varbloom_time_decay=$(awk -v m="$varbloom_time_decay_size" -v n="$N_BENIGN_CONNECTIONS" -v k=$hash_k_time_decay '
+    BEGIN {
+        theo_fp_rate = (1 - ((1 - (1 / m)) ^ (k * n))) ^ k;
+        print theo_fp_rate;
     }')
 
     # Cuckoo Filter
@@ -348,50 +547,57 @@ should_rerun_experiment() {
     b=$(awk "BEGIN {print ($AVAILABLE_MEMORY_BIT / $N_BENIGN_CONNECTIONS)}")
     theo_fp_rate_cuckoo=$(awk -v b="$b" -v a="$real_a" '
     BEGIN {
-        exp_fp_rate = 1/(2^((b * a) - 3))
-        print exp_fp_rate;
+        theo_fp_rate = 1/(2^((b * a) - 3))
+        print theo_fp_rate;
     }')
 
     # Cuckoo Filter with semi-sorting
     theo_fp_rate_cuckoo_ss=$(awk -v b="$b" -v a="$real_a" '
     BEGIN {
-        exp_fp_rate = 1/(2^((b * a) - 2))
-        print exp_fp_rate;
+        theo_fp_rate = 1/(2^((b * a) - 2))
+        print theo_fp_rate;
     }')
 
 # Print the results
     echo "========================================================="
     echo "|                  False Positive Rates                 |"
     echo "========================================================="
-    printf "| %-30s | %-10s | %-10s |\n" "Filter Type" "Theore. FP" "Experi. FP"
+    printf "| %-30s | %-12s | %-10s |\n" "Filter Type" "Theore. FP" "Experi. FP"
     echo "---------------------------------------------------------"
 
-    # Print the Bloom Filter (Standard) results
-    printf "| %-30s | %-10s | %-10s |\n" "Bloom Filter (1 Part.)" \
+    printf "| %-30s | %-12s | %-10s |\n" "Bloom Filter (1 Part.)" \
         "$theo_fp_rate_bloom_std" \
         "$exp_fp_rate_bloom_std"
 
-    # Print the Bloom Filter (Part 2) results
-    printf "| %-30s | %-10s | %-10s |\n" "Bloom Filter (2 Part.)" \
+    printf "| %-30s | %-12s | %-10s |\n" "Bloom Filter (2 Part.)" \
         "$theo_fp_rate_bloom_part_2" \
         "$exp_fp_rate_bloom_part_2"
 
-    # Print the Bloom Filter (Part 3) results
-    printf "| %-30s | %-10s | %-10s |\n" "Bloom Filter (3 Part.)" \
+    printf "| %-30s | %-12s | %-10s |\n" "Bloom Filter (3 Part.)" \
         "$theo_fp_rate_bloom_part_3" \
         "$exp_fp_rate_bloom_part_3"
 
-    # Print the Cuckoo Filter results
-    printf "| %-30s | %-10s | %-10s |\n" "Cuckoo Filter" \
+    printf "| %-30s | %-12s | %-10s |\n" "Partitioned 'VarBloom' Filter" \
+        "$theo_fp_rate_bloom_part_k" \
+        "N/A"
+
+    printf "| %-30s | %-12s | %-10s |\n" "'VarBloom' Filter" \
+        "$theo_fp_rate_varbloom" \
+        "$exp_fp_rate_varbloom"
+
+    printf "| %-30s | %-12s | %-10s |\n" "'VarBloom Time-Decay' Filter" \
+        "$theo_fp_rate_varbloom_time_decay" \
+        "$exp_fp_rate_varbloom_time_decay"
+
+    printf "| %-30s | %-12s | %-10s |\n" "Cuckoo Filter" \
         "$theo_fp_rate_cuckoo" \
         "$exp_fp_rate_cuckoo"
 
-    printf "| %-30s | %-10s | %-10s |\n" "Cuckoo Filter Python" \
+    printf "| %-30s | %-12s | %-10s |\n" "Cuckoo Filter Python" \
         "$theo_fp_rate_cuckoo" \
         "$exp_fp_rate_cuckoo_py"
 
-    # Print the SS Cuckoo Filter results
-    printf "| %-30s | %-10s | %-10s |\n" "SS Cuckoo Filter" \
+    printf "| %-30s | %-12s | %-10s |\n" "SS Cuckoo Filter" \
         "$theo_fp_rate_cuckoo_ss" \
         "$exp_fp_rate_cuckoo_ss"
 

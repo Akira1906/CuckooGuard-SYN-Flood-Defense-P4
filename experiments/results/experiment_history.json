@@ -1,30 +1,822 @@
 [
   {
-    "timestamp": "2025-03-21 18:16:25",
-    "available_memory_bit": 65536,
+    "timestamp": "2025-03-23 13:47:07",
+    "available_memory_bit": 30000,
     "n_benign_connections": 5000,
     "n_hostile_test_packets": 100000,
     "bloom_part_2": {
-      "size_bits": 32768,
-      "fp_hits": 2112,
-      "fp_rate": 0.02112
+      "size_bits": 15000,
+      "fp_hits": 0,
+      "fp_rate": 0
     },
     "bloom_part_3": {
-      "size_bits": 21845,
-      "fp_hits": 4150,
-      "fp_rate": 0.0415
+      "size_bits": 10000,
+      "fp_hits": 6034,
+      "fp_rate": 0.06034
     },
     "bloom_std": {
-      "size_bits": 65536,
-      "fp_hits": 7283,
-      "fp_rate": 0.07283
+      "size_bits": 30000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 30000,
+      "fp_hits": 5820,
+      "fp_rate": 0.0582
+    },
+    "cuckoo": {
+      "fingerprint_size": 5,
+      "n_buckets": 1500,
+      "n_fingerprints": 6000,
+      "fp_hits": 20816,
+      "fp_rate": 0.20816,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 13:51:32",
+    "available_memory_bit": 32500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 16250,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 10833,
+      "fp_hits": 5059,
+      "fp_rate": 0.05059
+    },
+    "bloom_std": {
+      "size_bits": 32500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 32500,
+      "fp_hits": 4387,
+      "fp_rate": 0.04387
+    },
+    "cuckoo": {
+      "fingerprint_size": 6,
+      "n_buckets": 1354,
+      "n_fingerprints": 5416,
+      "fp_hits": 11742,
+      "fp_rate": 0.11742,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 13:55:57",
+    "available_memory_bit": 35000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 17500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 11666,
+      "fp_hits": 4214,
+      "fp_rate": 0.04214
+    },
+    "bloom_std": {
+      "size_bits": 35000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 35000,
+      "fp_hits": 3573,
+      "fp_rate": 0.03573
+    },
+    "cuckoo": {
+      "fingerprint_size": 6,
+      "n_buckets": 1458,
+      "n_fingerprints": 5832,
+      "fp_hits": 11175,
+      "fp_rate": 0.11175,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:03:32",
+    "available_memory_bit": 40000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 20000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 13333,
+      "fp_hits": 3086,
+      "fp_rate": 0.03086
+    },
+    "bloom_std": {
+      "size_bits": 40000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 40000,
+      "fp_hits": 2211,
+      "fp_rate": 0.02211
+    },
+    "cuckoo": {
+      "fingerprint_size": 7,
+      "n_buckets": 1428,
+      "n_fingerprints": 5712,
+      "fp_hits": 5879,
+      "fp_rate": 0.05879,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:07:52",
+    "available_memory_bit": 42500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 21250,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 14166,
+      "fp_hits": 2682,
+      "fp_rate": 0.02682
+    },
+    "bloom_std": {
+      "size_bits": 42500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 42500,
+      "fp_hits": 1843,
+      "fp_rate": 0.01843
+    },
+    "cuckoo": {
+      "fingerprint_size": 8,
+      "n_buckets": 1328,
+      "n_fingerprints": 5312,
+      "fp_hits": 3143,
+      "fp_rate": 0.03143,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:12:13",
+    "available_memory_bit": 45000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 22500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 15000,
+      "fp_hits": 2356,
+      "fp_rate": 0.02356
+    },
+    "bloom_std": {
+      "size_bits": 45000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 45000,
+      "fp_hits": 1368,
+      "fp_rate": 0.01368
+    },
+    "cuckoo": {
+      "fingerprint_size": 8,
+      "n_buckets": 1406,
+      "n_fingerprints": 5624,
+      "fp_hits": 3055,
+      "fp_rate": 0.03055,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:16:30",
+    "available_memory_bit": 47500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 23750,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 15833,
+      "fp_hits": 1955,
+      "fp_rate": 0.01955
+    },
+    "bloom_std": {
+      "size_bits": 47500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 47500,
+      "fp_hits": 1027,
+      "fp_rate": 0.01027
+    },
+    "cuckoo": {
+      "fingerprint_size": 9,
+      "n_buckets": 1319,
+      "n_fingerprints": 5276,
+      "fp_hits": 1502,
+      "fp_rate": 0.01502,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:20:48",
+    "available_memory_bit": 50000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 25000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 16666,
+      "fp_hits": 1707,
+      "fp_rate": 0.01707
+    },
+    "bloom_std": {
+      "size_bits": 50000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 50000,
+      "fp_hits": 798,
+      "fp_rate": 0.00798
+    },
+    "cuckoo": {
+      "fingerprint_size": 9,
+      "n_buckets": 1388,
+      "n_fingerprints": 5552,
+      "fp_hits": 1575,
+      "fp_rate": 0.01575,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:25:05",
+    "available_memory_bit": 52500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 26250,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 17500,
+      "fp_hits": 1556,
+      "fp_rate": 0.01556
+    },
+    "bloom_std": {
+      "size_bits": 52500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 52500,
+      "fp_hits": 674,
+      "fp_rate": 0.00674
+    },
+    "cuckoo": {
+      "fingerprint_size": 9,
+      "n_buckets": 1458,
+      "n_fingerprints": 5832,
+      "fp_hits": 1475,
+      "fp_rate": 0.01475,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:29:23",
+    "available_memory_bit": 55000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 27500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 18333,
+      "fp_hits": 1420,
+      "fp_rate": 0.0142
+    },
+    "bloom_std": {
+      "size_bits": 55000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 55000,
+      "fp_hits": 564,
+      "fp_rate": 0.00564
+    },
+    "cuckoo": {
+      "fingerprint_size": 10,
+      "n_buckets": 1375,
+      "n_fingerprints": 5500,
+      "fp_hits": 769,
+      "fp_rate": 0.00769,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:33:41",
+    "available_memory_bit": 57500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 28750,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 19166,
+      "fp_hits": 1234,
+      "fp_rate": 0.01234
+    },
+    "bloom_std": {
+      "size_bits": 57500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 57500,
+      "fp_hits": 374,
+      "fp_rate": 0.00374
+    },
+    "cuckoo": {
+      "fingerprint_size": 10,
+      "n_buckets": 1437,
+      "n_fingerprints": 5748,
+      "fp_hits": 761,
+      "fp_rate": 0.00761,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:37:57",
+    "available_memory_bit": 60000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 30000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 20000,
+      "fp_hits": 1097,
+      "fp_rate": 0.01097
+    },
+    "bloom_std": {
+      "size_bits": 60000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 60000,
+      "fp_hits": 277,
+      "fp_rate": 0.00277
+    },
+    "cuckoo": {
+      "fingerprint_size": 11,
+      "n_buckets": 1363,
+      "n_fingerprints": 5452,
+      "fp_hits": 424,
+      "fp_rate": 0.00424,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:42:13",
+    "available_memory_bit": 62500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 31250,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 20833,
+      "fp_hits": 985,
+      "fp_rate": 0.00985
+    },
+    "bloom_std": {
+      "size_bits": 62500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 62500,
+      "fp_hits": 234,
+      "fp_rate": 0.00234
+    },
+    "cuckoo": {
+      "fingerprint_size": 11,
+      "n_buckets": 1420,
+      "n_fingerprints": 5680,
+      "fp_hits": 370,
+      "fp_rate": 0.0037,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:46:31",
+    "available_memory_bit": 65000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 32500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 21666,
+      "fp_hits": 873,
+      "fp_rate": 0.00873
+    },
+    "bloom_std": {
+      "size_bits": 65000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 65000,
+      "fp_hits": 210,
+      "fp_rate": 0.0021
     },
     "cuckoo": {
       "fingerprint_size": 12,
-      "n_buckets": 1365,
-      "n_fingerprints": 5460,
-      "fp_hits": 204,
-      "fp_rate": 0.00204,
+      "n_buckets": 1354,
+      "n_fingerprints": 5416,
+      "fp_hits": 206,
+      "fp_rate": 0.00206,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:50:47",
+    "available_memory_bit": 67500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 33750,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 22500,
+      "fp_hits": 846,
+      "fp_rate": 0.00846
+    },
+    "bloom_std": {
+      "size_bits": 67500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 67500,
+      "fp_hits": 186,
+      "fp_rate": 0.00186
+    },
+    "cuckoo": {
+      "fingerprint_size": 12,
+      "n_buckets": 1406,
+      "n_fingerprints": 5624,
+      "fp_hits": 187,
+      "fp_rate": 0.00187,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:55:02",
+    "available_memory_bit": 70000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 35000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 23333,
+      "fp_hits": 724,
+      "fp_rate": 0.00724
+    },
+    "bloom_std": {
+      "size_bits": 70000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 70000,
+      "fp_hits": 127,
+      "fp_rate": 0.00127
+    },
+    "cuckoo": {
+      "fingerprint_size": 13,
+      "n_buckets": 1346,
+      "n_fingerprints": 5384,
+      "fp_hits": 103,
+      "fp_rate": 0.00103,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 14:59:18",
+    "available_memory_bit": 72500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 36250,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 24166,
+      "fp_hits": 682,
+      "fp_rate": 0.00682
+    },
+    "bloom_std": {
+      "size_bits": 72500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 72500,
+      "fp_hits": 80,
+      "fp_rate": 0.0008
+    },
+    "cuckoo": {
+      "fingerprint_size": 13,
+      "n_buckets": 1394,
+      "n_fingerprints": 5576,
+      "fp_hits": 99,
+      "fp_rate": 0.00099,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 15:03:35",
+    "available_memory_bit": 75000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 37500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 25000,
+      "fp_hits": 647,
+      "fp_rate": 0.00647
+    },
+    "bloom_std": {
+      "size_bits": 75000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 75000,
+      "fp_hits": 75,
+      "fp_rate": 0.00075
+    },
+    "cuckoo": {
+      "fingerprint_size": 14,
+      "n_buckets": 1339,
+      "n_fingerprints": 5356,
+      "fp_hits": 57,
+      "fp_rate": 0.00057,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 15:07:52",
+    "available_memory_bit": 77500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 38750,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 25833,
+      "fp_hits": 503,
+      "fp_rate": 0.00503
+    },
+    "bloom_std": {
+      "size_bits": 77500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 77500,
+      "fp_hits": 53,
+      "fp_rate": 0.00053
+    },
+    "cuckoo": {
+      "fingerprint_size": 14,
+      "n_buckets": 1383,
+      "n_fingerprints": 5532,
+      "fp_hits": 49,
+      "fp_rate": 0.00049,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 15:12:08",
+    "available_memory_bit": 80000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 40000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 26666,
+      "fp_hits": 554,
+      "fp_rate": 0.00554
+    },
+    "bloom_std": {
+      "size_bits": 80000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 80000,
+      "fp_hits": 46,
+      "fp_rate": 0.00046
+    },
+    "cuckoo": {
+      "fingerprint_size": 15,
+      "n_buckets": 1333,
+      "n_fingerprints": 5332,
+      "fp_hits": 28,
+      "fp_rate": 0.00028,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 15:22:36",
+    "available_memory_bit": 87500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 43750,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 29166,
+      "fp_hits": 411,
+      "fp_rate": 0.00411
+    },
+    "bloom_std": {
+      "size_bits": 87500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 87500,
+      "fp_hits": 21,
+      "fp_rate": 0.00021
+    },
+    "cuckoo": {
+      "fingerprint_size": 16,
+      "n_buckets": 1367,
+      "n_fingerprints": 5468,
+      "fp_hits": 12,
+      "fp_rate": 0.00012,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 15:26:53",
+    "available_memory_bit": 90000,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 45000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 30000,
+      "fp_hits": 360,
+      "fp_rate": 0.0036
+    },
+    "bloom_std": {
+      "size_bits": 90000,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 90000,
+      "fp_hits": 16,
+      "fp_rate": 0.00016
+    },
+    "cuckoo": {
+      "fingerprint_size": 17,
+      "n_buckets": 1323,
+      "n_fingerprints": 5292,
+      "fp_hits": 6,
+      "fp_rate": 6e-05,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 15:31:10",
+    "available_memory_bit": 92500,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 100000,
+    "bloom_part_2": {
+      "size_bits": 46250,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 30833,
+      "fp_hits": 344,
+      "fp_rate": 0.00344
+    },
+    "bloom_std": {
+      "size_bits": 92500,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 92500,
+      "fp_hits": 16,
+      "fp_rate": 0.00016
+    },
+    "cuckoo": {
+      "fingerprint_size": 17,
+      "n_buckets": 1360,
+      "n_fingerprints": 5440,
+      "fp_hits": 9,
+      "fp_rate": 9e-05,
+      "fp_rate_ss": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-23 15:37:59",
+    "available_memory_bit": 84227,
+    "n_benign_connections": 5000,
+    "n_hostile_test_packets": 40000,
+    "bloom_part_2": {
+      "size_bits": 42113,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_part_3": {
+      "size_bits": 28075,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "bloom_std": {
+      "size_bits": 84227,
+      "fp_hits": 0,
+      "fp_rate": 0
+    },
+    "varbloom": {
+      "size_bits": 84227,
+      "fp_hits": 9,
+      "fp_rate": 0.000225
+    },
+    "varbloom_time_decay": {
+      "size_bits": 42113,
+      "fp_hits": 703,
+      "fp_rate": 0.017575
+    },
+    "cuckoo": {
+      "fingerprint_size": 16,
+      "n_buckets": 1316,
+      "n_fingerprints": 5264,
+      "fp_hits": 5,
+      "fp_rate": 0.000125,
       "fp_rate_ss": 0
     }
   }

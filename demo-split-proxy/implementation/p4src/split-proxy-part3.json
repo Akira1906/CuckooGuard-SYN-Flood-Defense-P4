@@ -470,7 +470,7 @@
         "column" : 31,
         "source_fragment" : "reg_bloom_0_1"
       },
-      "size" : 21845,
+      "size" : 31666,
       "bitwidth" : 1
     },
     {
@@ -482,7 +482,7 @@
         "column" : 31,
         "source_fragment" : "reg_bloom_0_2"
       },
-      "size" : 21845,
+      "size" : 31666,
       "bitwidth" : 1
     },
     {
@@ -494,7 +494,7 @@
         "column" : 31,
         "source_fragment" : "reg_bloom_0_3"
       },
-      "size" : 21845,
+      "size" : 31666,
       "bitwidth" : 1
     },
     {
@@ -506,7 +506,7 @@
         "column" : 31,
         "source_fragment" : "reg_bloom_1_1"
       },
-      "size" : 21845,
+      "size" : 31666,
       "bitwidth" : 1
     },
     {
@@ -518,7 +518,7 @@
         "column" : 31,
         "source_fragment" : "reg_bloom_1_2"
       },
-      "size" : 21845,
+      "size" : 31666,
       "bitwidth" : 1
     },
     {
@@ -530,7 +530,7 @@
         "column" : 31,
         "source_fragment" : "reg_bloom_1_3"
       },
-      "size" : 21845,
+      "size" : 31666,
       "bitwidth" : 1
     }
   ],
@@ -1523,7 +1523,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x00005554"
+              "value" : "0x00007bb1"
             }
           ],
           "source_info" : {
@@ -1679,7 +1679,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x00005554"
+              "value" : "0x00007bb1"
             }
           ],
           "source_info" : {
@@ -1830,7 +1830,7 @@
                       },
                       "right" : {
                         "type" : "hexstr",
-                        "value" : "0x00005554"
+                        "value" : "0x00007bb1"
                       }
                     }
                   }
@@ -1886,7 +1886,7 @@
                       },
                       "right" : {
                         "type" : "hexstr",
-                        "value" : "0xffffaaab"
+                        "value" : "0xffff844e"
                       }
                     }
                   },
@@ -1902,7 +1902,7 @@
             "filename" : "../demo-split-proxy/implementation/p4src/split-proxy-part3.p4",
             "line" : 327,
             "column" : 12,
-            "source_fragment" : "meta.bloom_hash_3 = meta.bloom_hash_3 - 32w21845"
+            "source_fragment" : "meta.bloom_hash_3 = meta.bloom_hash_3 - 32w31666"
           }
         },
         {
@@ -2051,7 +2051,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x00005554"
+              "value" : "0x00007bb1"
             }
           ],
           "source_info" : {
@@ -2246,7 +2246,7 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x00005554"
+              "value" : "0x00007bb1"
             }
           ],
           "source_info" : {
@@ -2436,7 +2436,7 @@
                       },
                       "right" : {
                         "type" : "hexstr",
-                        "value" : "0x00005554"
+                        "value" : "0x00007bb1"
                       }
                     }
                   }
@@ -2492,7 +2492,7 @@
                       },
                       "right" : {
                         "type" : "hexstr",
-                        "value" : "0xffffaaab"
+                        "value" : "0xffff844e"
                       }
                     }
                   },
@@ -2508,7 +2508,7 @@
             "filename" : "../demo-split-proxy/implementation/p4src/split-proxy-part3.p4",
             "line" : 364,
             "column" : 12,
-            "source_fragment" : "meta.bloom_hash_3 = meta.bloom_hash_3 - 32w21845"
+            "source_fragment" : "meta.bloom_hash_3 = meta.bloom_hash_3 - 32w31666"
           }
         },
         {

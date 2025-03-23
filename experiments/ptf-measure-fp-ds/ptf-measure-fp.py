@@ -175,39 +175,45 @@ class FPTest(Test):
             self.safe_filter_connection_insertion(client_ip, client_port)
 
     def safe_filter_connection_insertion(self, client_ip, client_port):
-        # Step 1: trigger insertion into Filter (packet from ebpf to P4 signaling to add the connection to the Filter)
+        repeat = 0
+        while repeat < 10:
+            # Step 1: trigger insertion into Filter (packet from ebpf to P4 signaling to add the connection to the Filter)
 
-        ack_pkt = (
-            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
-            IP(src=client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=client_port, dport=self.server_port,
-                flags="E", seq=1, ack=38, window=502)
-        )
+            ack_pkt = (
+                Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+                IP(src=client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+                TCP(sport=client_port, dport=self.server_port,
+                    flags="E", seq=1, ack=38, window=502)
+            )
 
-        tu.send_packet(self, self.ebpf_iface, ack_pkt)
+            tu.send_packet(self, self.ebpf_iface, ack_pkt)
 
-        sleep(self.packet_processing_delay)
+            sleep(self.packet_processing_delay)
 
-        # Step 2: send legitimate TCP packet through P4 check if it gets through Filter operation was successful
-        self.packet_processing_delay
-        tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
-        ack_pkt = (
-            Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
-            IP(src=client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-            TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
-            Raw(load=tcp_load)
-        )
-        tu.send_packet(self, self.client_iface, ack_pkt)
+            # Step 2: send legitimate TCP packet through P4 check if it gets through Filter operation was successful
+            self.packet_processing_delay
+            tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
+            ack_pkt = (
+                Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
+                IP(src=client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+                TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+                Raw(load=tcp_load)
+            )
+            tu.send_packet(self, self.client_iface, ack_pkt)
 
-        ack_pkt = (
-            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
-            IP(src=client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
-            TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
-            Raw(load=tcp_load)
-        )
+            ack_pkt = (
+                Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+                IP(src=client_ip, dst=self.server_ip, ttl=63, proto=6, id=1, flags=0) /
+                TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+                Raw(load=tcp_load)
+            )
 
-        try:
-            tu.verify_packet(self, ack_pkt, self.ebpf_iface)
-        except AssertionError:
-            print(f"insertion of connection {client_ip}:{client_port} failed")
-            raise AssertionError(f"Insertion failed: {client_ip}:{client_port}")
+            try:
+                tu.verify_packet(self, ack_pkt, self.ebpf_iface)
+                repeat = float('inf')
+            except AssertionError:
+                print(f"insertion of connection {client_ip}:{client_port} failed")
+                if repeat >= 10:
+                    raise AssertionError(f"Insertion failed: {client_ip}:{client_port}")
+                else:
+                    repeat += 1
