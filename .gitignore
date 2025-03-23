@@ -16,4 +16,8 @@ split-proxy-crc_p4rt.txt
 split-proxy-part2.json
 split-proxy-part3.json
 split-proxy-part1.json
+split-proxy-varbloom.json
+*p4rt.txt
 .vscode
+figures/*
+results/*

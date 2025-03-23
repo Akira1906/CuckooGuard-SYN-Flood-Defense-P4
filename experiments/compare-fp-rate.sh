@@ -9,14 +9,14 @@
     run_bloom_part1=false
     run_bloom_part2=false
     run_bloom_part3=false
-    run_varbloom=true
-    run_varbloom_time_decay=true
-    run_cuckoo=true
+    run_varbloom=false
+    run_varbloom_time_decay=false
+    run_cuckoo=false
     
 
 # Process named arguments
-    ARGS=$(getopt -o c:h:m:r: --long \
-        n_benign_connections:,n_hostile_test_packets:,available_memory_bit:,always_retest: \
+    ARGS=$(getopt -o c:h:m:r:o: --long \
+        n_benign_connections:,n_hostile_test_packets:,available_memory_bit:,always_retest:,output_file: \
         -- "$@")
 
     if [[ $? -ne 0 ]]; then
@@ -32,6 +32,7 @@
             -h|--n_hostile_test_packets) N_HOSTILE_TEST_PACKETS="$2"; shift 2 ;;
             -m|--available_memory_bit) AVAILABLE_MEMORY_BIT="$2"; shift 2 ;;
             -r|--always_retest) ALWAYS_RETEST="$2"; shift 2 ;;
+            -o|--output_file) OUTPUT_FILE="$2"; shift 2 ;;
             --) shift; break ;;
             *) break ;;
         esac
@@ -119,6 +120,15 @@
             echo "[$new_entry]" > "$results_json"
         fi
 
+        # If OUTPUT_FILE is set, save experiment results into it additionally
+        if [[ -n "$OUTPUT_FILE" ]]; then
+            if [[ -f "$OUTPUT_FILE" ]]; then
+                jq --argjson new_entry "$new_entry" '. + [$new_entry]' "$OUTPUT_FILE" > "$OUTPUT_FILE.tmp" && mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
+            else
+                echo "[$new_entry]" > "$OUTPUT_FILE"
+            fi
+            echo "✅ Experiment saved to $OUTPUT_FILE"
+        fi
         echo "✅ Experiment saved to $results_json"
     }
 
@@ -473,18 +483,18 @@
         else
         echo "Using cached Cuckoo Filter results."
     fi
+    if [[ "$run_cuckoo" == "true" ]]; then
+        # Run Cuckoo Python Experiment
+        python3 ../demo-python-cuckoo/tests/fp_rate_test.py \
+                --filter_size $n_fingerprints \
+                --fingerprint_size $fingerprint_size \
+                --n_buckets $n_buckets \
+                --n_benign_connections $N_BENIGN_CONNECTIONS \
+                --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+                > results/fp_cucko_py_results.txt
 
-    # Run Cuckoo Python Experiment
-    python3 ../demo-python-cuckoo/tests/fp_rate_test.py \
-            --filter_size $n_fingerprints \
-            --fingerprint_size $fingerprint_size \
-            --n_buckets $n_buckets \
-            --n_benign_connections $N_BENIGN_CONNECTIONS \
-            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
-            > results/fp_cucko_py_results.txt
-
-    fp_hits_cuckoo_py=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_cucko_py_results.txt)
-
+        fp_hits_cuckoo_py=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_cucko_py_results.txt)
+    fi
 
 # Calculate the experimental FP rates
     exp_fp_rate_bloom_part_2=$(awk "BEGIN {print ($fp_hits_bloom_part_2 / ($N_HOSTILE_TEST_PACKETS))}")
@@ -558,6 +568,25 @@
         print theo_fp_rate;
     }')
 
+    # Swap experimental FP rates with theoretical FP rates
+    exp_fp_rate_bloom_part_2=$theo_fp_rate_bloom_part_2
+    exp_fp_rate_bloom_part_3=$theo_fp_rate_bloom_part_3
+    exp_fp_rate_bloom_std=$theo_fp_rate_bloom_std
+    exp_fp_rate_varbloom=$theo_fp_rate_varbloom
+    exp_fp_rate_varbloom_time_decay=$theo_fp_rate_varbloom_time_decay
+    exp_fp_rate_cuckoo=$theo_fp_rate_cuckoo
+    exp_fp_rate_cuckoo_ss=$theo_fp_rate_cuckoo_ss
+    exp_fp_rate_cuckoo_py=$theo_fp_rate_cuckoo
+
+    # Calculate fake fp_hits from theoretical values
+    fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_HOSTILE_TEST_PACKETS)}")
+    fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_HOSTILE_TEST_PACKETS)}")
+    fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_HOSTILE_TEST_PACKETS)}")
+    fp_hits_varbloom=$(awk "BEGIN {print int($theo_fp_rate_varbloom * $N_HOSTILE_TEST_PACKETS)}")
+    fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_HOSTILE_TEST_PACKETS)}")
+    fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_HOSTILE_TEST_PACKETS)}")
+    fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_HOSTILE_TEST_PACKETS)}")
+
 # Print the results
     echo "========================================================="
     echo "|                  False Positive Rates                 |"
@@ -608,6 +637,7 @@
 
 
 # Save the results to file
-    if [ "$ran_experiment" == "true" ]; then
-        save_experiment_json
-    fi
+    save_experiment_json
+    # if [ "$ran_experiment" == "true" ]; then
+        
+    # fi

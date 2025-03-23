@@ -62,7 +62,7 @@ def main(json_file):
     ax.set_title("")  # Keep minimal for paper inclusion
 
     fig.tight_layout()
-    output_file = "false_positive_rates.svg"
+    output_file = "figures/fp-var_memory.svg"
     plt.savefig(output_file, format="svg")
     print(f"✅ Plot saved as '{output_file}'")
 
