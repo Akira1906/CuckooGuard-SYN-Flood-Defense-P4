@@ -56,8 +56,6 @@ class Test(BaseTest):
         # Setting up PTF dataplane
         self.dataplane = ptf.dataplane_instance
         self.dataplane.flush()
-        print("Data Plane is of type:")
-        print(type(self.dataplane))
 
         logging.debug("setUp()")
         grpc_addr = tu.test_param_get("grpcaddr")
@@ -111,25 +109,34 @@ class FPTest(Test):
         self.add_connections_to_filter(connections_set)
 
         # Step 2: Add and remove a new element repeatedly
-        self.perform_add_remove_test(n_test_packets)
+        self.perform_add_remove_test(n_test_packets, connections_set)
 
         # Step 3: Retrieve counter value from P4 program
         counter_value = self.get_p4_counter_value()
         
         print("START RESULT")
-        print(f"Counter Value: {counter_value}")
+        print(f"{counter_value}")
         print("END RESULT")
 
-    def perform_add_remove_test(self, n_test_packets):
+    def perform_add_remove_test(self, n_test_packets, connections_in_filter):
         for i in range(n_test_packets):
-            test_ip = f"10.0.{random.randint(0, 255)}.{random.randint(1, 254)}"
-            test_port = random.randint(1024, 65535)
+            # Ensure the new element is not already in the filter
+            while True:
+                test_ip = f"10.0.{random.randint(0, 255)}.{random.randint(1, 254)}"
+                test_port = random.randint(1024, 65535)
+                if (test_ip, test_port) not in connections_in_filter:
+                    break
 
             # Add the new element to the filter
-            self.safe_filter_connection_insertion(test_ip, test_port)
+            self.filter_connection_insertion(test_ip, test_port)
+            connections_in_filter.add((test_ip, test_port))
 
-            # Remove the element from the filter
-            self.remove_connection_from_filter(test_ip, test_port)
+            sleep(self.packet_processing_delay)
+
+            # Randomly select an element that is already in the filter to remove
+            remove_ip, remove_port = random.choice(list(connections_in_filter))
+            self.remove_connection_from_filter(remove_ip, remove_port)
+            connections_in_filter.remove((remove_ip, remove_port))
 
     def remove_connection_from_filter(self, client_ip, client_port):
         # Trigger removal of the connection from the filter
@@ -139,51 +146,13 @@ class FPTest(Test):
             TCP(sport=client_port, dport=self.server_port, flags="R", seq=1, ack=38, window=502)
         )
         tu.send_packet(self, self.ebpf_iface, remove_pkt)
-        sleep(self.packet_processing_delay)
 
     def get_p4_counter_value(self):
         # Retrieve the counter value from the P4 program
-        counter_name = "my_counter"  # Replace with the actual counter name
-        counter_index = 0  # Replace with the appropriate index if needed
-        counter_entry = sh.TableEntry(f".{counter_name}[{counter_index}]").read()
-        return counter_entry.data.packet_count
-
-    def test_fp_rate(self, n_samples, benign_connections_set):
-        # generate test sample connections
-
-        n_false_positives = 0
-        test_connections = []
-        while len(test_connections) < n_samples:
-            ip = f"10.0.{random.randint(0, 255)}.{random.randint(1, 254)}"
-            port = random.randint(1024, 65535)
-            if (ip, port) not in benign_connections_set:
-                test_connections.append((ip, port))
-
-        for i, connection in enumerate(test_connections):
-            client_ip, client_port = connection
-            # print(f"test {i}")
-            # send test packet to P4 and check if filter mistakenly let the packet through
-            tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
-            ack_pkt = (
-                Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
-                IP(src=client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
-                TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
-                Raw(load=tcp_load)
-            )
-            tu.send_packet(self, self.client_iface, ack_pkt)
-            
-            if i % 200 == 0:
-                n_false_positives += tu.count_matched_packets(self, get_packet_mask(ack_pkt), self.ebpf_iface, timeout=self.packet_processing_delay)
+        counter_entry = sh.DirectCounterEntry("ingressCounter").packet_count
+        print(counter_entry)
         
-        # catch packets that went through in a delayed manner
-        while(True):
-            count_packets = tu.count_matched_packets(self, get_packet_mask(ack_pkt), self.ebpf_iface, timeout=0.5)
-            print(f"processing overflow: #{count_packets}")
-            if count_packets == 0:
-                break
-            n_false_positives += count_packets
-
-        return n_false_positives
+        return counter_entry
 
     def generate_n_connections(self, n_connections):
         connections_ip_port = set()  # e.g. (10.0.0.1, 3737)
@@ -195,6 +164,18 @@ class FPTest(Test):
             port = random.randint(1024, 65535)
             connections_ip_port.add((ip, port))
         return connections_ip_port
+    
+    def filter_connection_insertion(self, client_ip, client_port):
+        # Step 1: trigger insertion into Filter (packet from ebpf to P4 signaling to add the connection to the Filter)
+
+        ack_pkt = (
+            Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
+            IP(src=client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+            TCP(sport=client_port, dport=self.server_port,
+                flags="E", seq=1, ack=38, window=502)
+        )
+
+        tu.send_packet(self, self.ebpf_iface, ack_pkt)
 
     def add_connections_to_filter(self, connections_ip_port):
 

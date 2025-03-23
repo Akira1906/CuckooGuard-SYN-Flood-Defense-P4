@@ -10,7 +10,7 @@ import numpy as np
 #     "timestamp": "2025-03-23 16:30:01",
 #     "available_memory_bit": 100000,
 #     "n_benign_connections": 4000,
-#     "n_hostile_test_packets": 10000,
+#     "n_test_packets": 10000,
 #     "bloom_part_2": {
 #       "size_bits": 50000,
 #       "fp_hits": 0,
@@ -54,12 +54,12 @@ def main(json_file):
 
     for entry in data:
         n_connections = entry['n_benign_connections']  # Extract number of connections
-        n_hostile = entry['n_hostile_test_packets']
+        n_test= entry['n_test_packets']
 
         for key, value in entry.items():
             if isinstance(value, dict) and 'fp_hits' in value:
                 fp_hits = value['fp_hits']
-                fp_rate = fp_hits / n_hostile * 100 # in percent
+                fp_rate = fp_hits / n_test * 100 # in percent
 
                 if key not in results:
                     results[key] = {'connections': [], 'fp_rate': []}
@@ -100,7 +100,7 @@ def main(json_file):
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
-    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.5f}%"))
+    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.3f}%"))
     ax.tick_params(axis='y', which='both', labelsize=8)
     ax.set_xlabel("Number of Connections")  # Update x-axis label
     ax.set_ylabel("False Positive Rate")
@@ -109,7 +109,7 @@ def main(json_file):
     ax.set_title("")  # Keep minimal for paper inclusion
 
     fig.tight_layout()
-    output_file = "false_positive_rates.svg"
+    output_file = "figures/fp-var_connections.svg"
     plt.savefig(output_file, format="svg")
     print(f"✅ Plot saved as '{output_file}'")
 

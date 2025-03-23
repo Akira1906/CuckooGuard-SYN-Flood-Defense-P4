@@ -3,7 +3,7 @@
 # Global experiment parameters
     AVAILABLE_MEMORY_BIT=84227
     N_BENIGN_CONNECTIONS=5000
-    N_HOSTILE_TEST_PACKETS=40000
+    N_TEST_PACKETS=40000
     ALWAYS_RETEST=false
 
     run_bloom_part1=false
@@ -16,7 +16,7 @@
 
 # Process named arguments
     ARGS=$(getopt -o c:h:m:r:o: --long \
-        n_benign_connections:,n_hostile_test_packets:,available_memory_bit:,always_retest:,output_file: \
+        n_benign_connections:,n_test_packets:,available_memory_bit:,always_retest:,output_file: \
         -- "$@")
 
     if [[ $? -ne 0 ]]; then
@@ -29,7 +29,7 @@
     while true; do
         case "$1" in
             -c|--n_benign_connections) N_BENIGN_CONNECTIONS="$2"; shift 2 ;;
-            -h|--n_hostile_test_packets) N_HOSTILE_TEST_PACKETS="$2"; shift 2 ;;
+            -h|--n_test_packets) N_TEST_PACKETS="$2"; shift 2 ;;
             -m|--available_memory_bit) AVAILABLE_MEMORY_BIT="$2"; shift 2 ;;
             -r|--always_retest) ALWAYS_RETEST="$2"; shift 2 ;;
             -o|--output_file) OUTPUT_FILE="$2"; shift 2 ;;
@@ -42,14 +42,14 @@
 # Helper Functions
 
     save_experiment_json() {
-        results_json="results/experiment_history.json"
+        results_json="results/fp-experiment_history.json"
 
         # Create new experiment entry
         new_entry=$(jq -n \
             --arg timestamp "$(date +"%Y-%m-%d %H:%M:%S")" \
             --arg available_memory_bit "$AVAILABLE_MEMORY_BIT" \
             --arg n_benign_connections "$N_BENIGN_CONNECTIONS" \
-            --arg n_hostile_test_packets "$N_HOSTILE_TEST_PACKETS" \
+            --arg n_test_packets "$N_TEST_PACKETS" \
             --arg bloom_size_part_2 "$bloom_size_part_2" \
             --arg bloom_size_part_3 "$bloom_size_part_3" \
             --arg bloom_size_std "$bloom_size_std" \
@@ -75,7 +75,7 @@
                 "timestamp": $timestamp,
                 "available_memory_bit": $available_memory_bit | tonumber,
                 "n_benign_connections": $n_benign_connections | tonumber,
-                "n_hostile_test_packets": $n_hostile_test_packets | tonumber,
+                "n_test_packets": $n_test_packets | tonumber,
                 "bloom_part_2": {
                     "size_bits": $bloom_size_part_2 | tonumber,
                     "fp_hits": $fp_hits_bloom_part_2 | tonumber,
@@ -135,7 +135,7 @@
     should_rerun_experiment() {
         # this function should not be executed in a subshell
         local filter_type="$1"
-        results_json="results/experiment_history.json"
+        results_json="results/fp-experiment_history.json"
 
         # Default: Run the experiment
         should_rerun=true
@@ -145,11 +145,11 @@
 
             last_available_memory_bit=$(echo "$last_exp" | jq '.available_memory_bit')
             last_n_benign_connections=$(echo "$last_exp" | jq '.n_benign_connections')
-            last_n_hostile_test_packets=$(echo "$last_exp" | jq '.n_hostile_test_packets')
+            last_n_test_packets=$(echo "$last_exp" | jq '.n_test_packets')
 
             if [[ "$last_available_memory_bit" == "$AVAILABLE_MEMORY_BIT" &&
                 "$last_n_benign_connections" ==  "$N_BENIGN_CONNECTIONS" &&
-                "$last_n_hostile_test_packets" == "$N_HOSTILE_TEST_PACKETS" ]]; then
+                "$last_n_test_packets" == "$N_TEST_PACKETS" ]]; then
                     echo "global parameters the same"
                 if [[ "$filter_type" == "bloom_part_2" ]]; then
                     last_bloom_size_part_2=$(echo "$last_exp" | jq '.bloom_part_2.size_bits')
@@ -247,7 +247,7 @@
             --fingerprint_size 0 \
             --n_buckets 0 \
             --n_benign_connections $N_BENIGN_CONNECTIONS \
-            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            --n_test_packets $N_TEST_PACKETS \
             > results/fp_bloom_std_results.txt
 
         fp_hits_bloom_std=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_bloom_std_results.txt)
@@ -275,7 +275,7 @@
             --fingerprint_size 0 \
             --n_buckets 0 \
             --n_benign_connections $N_BENIGN_CONNECTIONS \
-            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            --n_test_packets $N_TEST_PACKETS \
             > results/fp_bloom_part_2_results.txt
 
         fp_hits_bloom_part_2=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_bloom_part_2_results.txt)
@@ -303,7 +303,7 @@
             --fingerprint_size 0 \
             --n_buckets 0 \
             --n_benign_connections $N_BENIGN_CONNECTIONS \
-            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            --n_test_packets $N_TEST_PACKETS \
             > results/fp_bloom_part_3_results.txt
 
         fp_hits_bloom_part_3=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_bloom_part_3_results.txt)
@@ -358,7 +358,7 @@
             --fingerprint_size 0 \
             --n_buckets $hash_k \
             --n_benign_connections $N_BENIGN_CONNECTIONS \
-            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            --n_test_packets $N_TEST_PACKETS \
             > results/fp_varbloom_results.txt
 
         fp_hits_varbloom=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_varbloom_results.txt)
@@ -413,7 +413,7 @@
             --fingerprint_size 0 \
             --n_buckets $hash_k_time_decay \
             --n_benign_connections $N_BENIGN_CONNECTIONS \
-            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            --n_test_packets $N_TEST_PACKETS \
             > results/fp_varbloom_time_decay_results.txt
 
         fp_hits_varbloom_time_decay=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_varbloom_time_decay_results.txt)
@@ -476,7 +476,7 @@
             --fingerprint_size $fingerprint_size \
             --n_buckets $n_buckets \
             --n_benign_connections $N_BENIGN_CONNECTIONS \
-            --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+            --n_test_packets $N_TEST_PACKETS \
             > results/fp_cuckoo_results.txt
 
         fp_hits_cuckoo=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_cuckoo_results.txt)
@@ -490,21 +490,21 @@
                 --fingerprint_size $fingerprint_size \
                 --n_buckets $n_buckets \
                 --n_benign_connections $N_BENIGN_CONNECTIONS \
-                --n_hostile_test_packets $N_HOSTILE_TEST_PACKETS \
+                --n_test_packets $N_TEST_PACKETS \
                 > results/fp_cucko_py_results.txt
 
         fp_hits_cuckoo_py=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_cucko_py_results.txt)
     fi
 
 # Calculate the experimental FP rates
-    exp_fp_rate_bloom_part_2=$(awk "BEGIN {print ($fp_hits_bloom_part_2 / ($N_HOSTILE_TEST_PACKETS))}")
-    exp_fp_rate_bloom_part_3=$(awk "BEGIN {print ($fp_hits_bloom_part_3 / ($N_HOSTILE_TEST_PACKETS))}")
-    exp_fp_rate_bloom_std=$(awk "BEGIN {print ($fp_hits_bloom_std / ($N_HOSTILE_TEST_PACKETS))}")
-    exp_fp_rate_varbloom=$(awk "BEGIN {print ($fp_hits_varbloom / ($N_HOSTILE_TEST_PACKETS))}")
-    exp_fp_rate_varbloom_time_decay=$(awk "BEGIN {print ($fp_hits_varbloom_time_decay / ($N_HOSTILE_TEST_PACKETS))}")
-    exp_fp_rate_cuckoo=$(awk "BEGIN {print ($fp_hits_cuckoo / ($N_HOSTILE_TEST_PACKETS))}")
+    exp_fp_rate_bloom_part_2=$(awk "BEGIN {print ($fp_hits_bloom_part_2 / ($N_TEST_PACKETS))}")
+    exp_fp_rate_bloom_part_3=$(awk "BEGIN {print ($fp_hits_bloom_part_3 / ($N_TEST_PACKETS))}")
+    exp_fp_rate_bloom_std=$(awk "BEGIN {print ($fp_hits_bloom_std / ($N_TEST_PACKETS))}")
+    exp_fp_rate_varbloom=$(awk "BEGIN {print ($fp_hits_varbloom / ($N_TEST_PACKETS))}")
+    exp_fp_rate_varbloom_time_decay=$(awk "BEGIN {print ($fp_hits_varbloom_time_decay / ($N_TEST_PACKETS))}")
+    exp_fp_rate_cuckoo=$(awk "BEGIN {print ($fp_hits_cuckoo / ($N_TEST_PACKETS))}")
     exp_fp_rate_cuckoo_ss=0
-    exp_fp_rate_cuckoo_py=$(awk "BEGIN {print ($fp_hits_cuckoo_py / ($N_HOSTILE_TEST_PACKETS))}")
+    exp_fp_rate_cuckoo_py=$(awk "BEGIN {print ($fp_hits_cuckoo_py / ($N_TEST_PACKETS))}")
 
 
 # Calculation of the theoretical exact ideal FP rates
@@ -568,7 +568,7 @@
         print theo_fp_rate;
     }')
 
-    # Swap experimental FP rates with theoretical FP rates
+# Swap experimental FP rates with theoretical FP rates
     exp_fp_rate_bloom_part_2=$theo_fp_rate_bloom_part_2
     exp_fp_rate_bloom_part_3=$theo_fp_rate_bloom_part_3
     exp_fp_rate_bloom_std=$theo_fp_rate_bloom_std
@@ -578,14 +578,14 @@
     exp_fp_rate_cuckoo_ss=$theo_fp_rate_cuckoo_ss
     exp_fp_rate_cuckoo_py=$theo_fp_rate_cuckoo
 
-    # Calculate fake fp_hits from theoretical values
-    fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_HOSTILE_TEST_PACKETS)}")
-    fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_HOSTILE_TEST_PACKETS)}")
-    fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_HOSTILE_TEST_PACKETS)}")
-    fp_hits_varbloom=$(awk "BEGIN {print int($theo_fp_rate_varbloom * $N_HOSTILE_TEST_PACKETS)}")
-    fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_HOSTILE_TEST_PACKETS)}")
-    fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_HOSTILE_TEST_PACKETS)}")
-    fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_HOSTILE_TEST_PACKETS)}")
+# Calculate fake fp_hits from theoretical values
+    fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_TEST_PACKETS)}")
+    fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_TEST_PACKETS)}")
+    fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_TEST_PACKETS)}")
+    fp_hits_varbloom=$(awk "BEGIN {print int($theo_fp_rate_varbloom * $N_TEST_PACKETS)}")
+    fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_TEST_PACKETS)}")
+    fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
+    fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
 
 # Print the results
     echo "========================================================="

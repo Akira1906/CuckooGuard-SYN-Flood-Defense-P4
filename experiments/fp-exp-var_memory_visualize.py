@@ -4,6 +4,46 @@ import matplotlib as mpl
 import sys
 import os
 
+#   {
+#     "timestamp": "2025-03-23 16:30:01",
+#     "available_memory_bit": 100000,
+#     "n_benign_connections": 4000,
+#     "n_test_packets": 10000,
+#     "bloom_part_2": {
+#       "size_bits": 50000,
+#       "fp_hits": 0,
+#       "fp_rate": 0
+#     },
+#     "bloom_part_3": {
+#       "size_bits": 33333,
+#       "fp_hits": 0,
+#       "fp_rate": 0
+#     },
+#     "bloom_std": {
+#       "size_bits": 100000,
+#       "fp_hits": 0,
+#       "fp_rate": 0
+#     },
+#     "varbloom": {
+#       "size_bits": 100000,
+#       "fp_hits": 0,
+#       "fp_rate": 0
+#     },
+#     "varbloom_time_decay": {
+#       "size_bits": 50000,
+#       "fp_hits": 9,
+#       "fp_rate": 0.0009
+#     },
+#     "cuckoo": {
+#       "fingerprint_size": 23,
+#       "n_buckets": 1086,
+#       "n_fingerprints": 4344,
+#       "fp_hits": 0,
+#       "fp_rate": 0,
+#       "fp_rate_ss": 0
+#     }
+#   },
+
 def main(json_file):
     with open(json_file, 'r') as f:
         data = json.load(f)
@@ -12,12 +52,12 @@ def main(json_file):
 
     for entry in data:
         memory_bits = entry['available_memory_bit']
-        n_hostile = entry['n_hostile_test_packets']
+        n_test = entry['n_test_packets']
 
         for key, value in entry.items():
             if isinstance(value, dict) and 'fp_hits' in value:
                 fp_hits = value['fp_hits']
-                fp_rate = fp_hits / n_hostile
+                fp_rate = fp_hits / n_test * 100
 
                 if key not in results:
                     results[key] = {'memory': [], 'fp_rate': []}
@@ -47,6 +87,8 @@ def main(json_file):
     fig, ax = plt.subplots()
 
     for filter_type, values in results.items():
+        if filter_type in ['bloom_part_2', 'bloom_std', 'bloom_part_3']:
+            continue
         mem = values['memory']
         fpr = values['fp_rate']
         if len(mem) != len(fpr):
@@ -55,6 +97,10 @@ def main(json_file):
         ax.plot(mem, fpr, marker='o', label=filter_type)
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
+    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
+    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.4f}%"))
+    ax.tick_params(axis='y', which='both', labelsize=8)
+
     ax.set_xlabel("Available Memory (bits)")
     ax.set_ylabel("False Positive Rate")
     ax.legend(loc="upper right", ncol=1)

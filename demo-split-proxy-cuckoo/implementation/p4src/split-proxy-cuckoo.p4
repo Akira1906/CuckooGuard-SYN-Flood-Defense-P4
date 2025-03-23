@@ -274,6 +274,10 @@ control MyVerifyChecksum(inout header_t hdr, inout metadata_t meta) {
      }
 }
 
+// extern counter {
+//     counter(bit<32> size, CounterType type);
+//     void count(in bit<32> index);
+// }
 
 // ---------------------------------------------------------------------------
 // Ingress Control
@@ -282,6 +286,10 @@ control SwitchIngress(
         inout header_t hdr,
         inout metadata_t meta,
         inout standard_metadata_t standard_metadata) {
+
+
+    // Implement counter that counts all packets arriving at Ingress
+
         
     action bypass_egress(){
         // bypass final step "egress"
@@ -387,9 +395,10 @@ control SwitchIngress(
             (bit<32>) 65535);
     }
 
-    
+    direct_counter(CounterType.packets) ingressCounter;
 
     table tb_triage_pkt_types_nextstep {
+        counters = ingressCounter;
         key = {
             meta.tcp_valid: exact;
             meta.udp_payload_valid: exact;
@@ -815,9 +824,9 @@ control SwitchIngress(
     }
 
 
-
-
     apply {
+        // // Count packets on ingress
+        // ingressCounter.count();
 
         // Timedelta verification and setup
         timedelta_step0();

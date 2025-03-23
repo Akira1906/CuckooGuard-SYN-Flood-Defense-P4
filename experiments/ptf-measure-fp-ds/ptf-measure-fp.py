@@ -102,7 +102,7 @@ class FPTest(Test):
         self.ebpf_iface = 4
         
         n_benign_connections = int(tu.test_param_get("n_benign_connections"))
-        n_hostile_test_packets = int(tu.test_param_get("n_hostile_test_packets"))
+        n_test_packets = int(tu.test_param_get("n_test_packets"))
         
         self.packet_processing_delay = 0.00025
 
@@ -112,7 +112,7 @@ class FPTest(Test):
         self.add_connections_to_filter(connections_set)
 
         fp_rate = self.test_fp_rate(
-            n_samples=n_hostile_test_packets, benign_connections_set=connections_set)
+            n_samples=n_test_packets, benign_connections_set=connections_set)
 
         print("START RESULT")
         print(str(fp_rate))

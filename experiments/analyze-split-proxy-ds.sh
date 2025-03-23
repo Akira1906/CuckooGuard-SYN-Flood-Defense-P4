@@ -12,10 +12,10 @@ FILTER_SIZE=""
 FINGERPRINT_SIZE=""
 N_BUCKETS=""
 N_BENIGN_CONNECTIONS=""
-N_HOSTILE_TEST_PACKETS=""
+N_TEST_PACKETS=""
 
 # Process named arguments
-ARGS=$(getopt -o a:f:p:t:s:g:b:c:h: --long app_path:,fn_suffix:,fp_test:,test_name:,filter_size:,fingerprint_size:,n_buckets:,n_benign_connections:,n_hostile_test_packets: -- "$@")
+ARGS=$(getopt -o a:f:p:t:s:g:b:c:h: --long app_path:,fn_suffix:,fp_test:,test_name:,filter_size:,fingerprint_size:,n_buckets:,n_benign_connections:,n_test_packets: -- "$@")
 if [[ $? -ne 0 ]]; then
     echo "Error: Invalid arguments"
     exit 1
@@ -33,15 +33,15 @@ while true; do
         -g|--fingerprint_size) FINGERPRINT_SIZE="$2"; shift 2 ;;
         -b|--n_buckets) N_BUCKETS="$2"; shift 2 ;;
         -c|--n_benign_connections) N_BENIGN_CONNECTIONS="$2"; shift 2 ;;
-        -h|--n_hostile_test_packets) N_HOSTILE_TEST_PACKETS="$2"; shift 2 ;;
+        -h|--n_test_packets) N_TEST_PACKETS="$2"; shift 2 ;;
         --) shift; break ;;
         *) break ;;
     esac
 done
 
 # Ensure required parameters are provided
-if [[ -z "$APP_PATH" || -z "$FN_SUFFIX" || -z "$FP_TEST" || -z "$TEST_NAME" || -z "$FILTER_SIZE" || -z "$FINGERPRINT_SIZE" || -z "$N_BUCKETS" || -z "$N_BENIGN_CONNECTIONS" || -z "$N_HOSTILE_TEST_PACKETS" ]]; then
-    echo "Usage: $0 --app_path <path> --fn_suffix <suffix> --fp_test <test_folder> --test_name <name> --filter_size <size> --fingerprint_size <size> --n_buckets <count> --n_benign_connections <count> --n_hostile_test_packets <count>"
+if [[ -z "$APP_PATH" || -z "$FN_SUFFIX" || -z "$FP_TEST" || -z "$TEST_NAME" || -z "$FILTER_SIZE" || -z "$FINGERPRINT_SIZE" || -z "$N_BUCKETS" || -z "$N_BENIGN_CONNECTIONS" || -z "$N_TEST_PACKETS" ]]; then
+    echo "Usage: $0 --app_path <path> --fn_suffix <suffix> --fp_test <test_folder> --test_name <name> --filter_size <size> --fingerprint_size <size> --n_buckets <count> --n_benign_connections <count> --n_test_packets <count>"
     exit 1
 fi
 
@@ -186,7 +186,7 @@ sudo -E ${P4_EXTRA_SUDO_OPTS} $(which ptf) \
     -i 2@veth3 \
     -i 3@veth5 \
     -i 4@veth4 \
-    --test-params="grpcaddr='localhost:9559';n_benign_connections='$N_BENIGN_CONNECTIONS';n_hostile_test_packets='$N_HOSTILE_TEST_PACKETS'" \
+    --test-params="grpcaddr='localhost:9559';n_benign_connections='$N_BENIGN_CONNECTIONS';n_test_packets='$N_TEST_PACKETS'" \
     --test-dir $FP_TEST
 
 echo "PTF test finished.  Waiting 2 seconds before cleanup"

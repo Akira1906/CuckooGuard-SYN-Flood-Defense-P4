@@ -35,7 +35,7 @@ def main():
     parser.add_argument("--fingerprint_size", type=int, required=False, default=12)
     parser.add_argument("--n_buckets", type=int, required=False, default=1365)
     parser.add_argument("--n_benign_connections", type=int, required=False, default=5000)
-    parser.add_argument("--n_hostile_test_packets", type=int, required=False, default=10000)
+    parser.add_argument("--n_test_packets", type=int, required=False, default=10000)
 
     args = parser.parse_args()
 
@@ -55,11 +55,11 @@ def main():
         except:
             print(f"⚠️  Insertion failed at {i}(filter may be full).")
 
-    test_set = generate_connections(args.n_hostile_test_packets, avoid_set=benign_set)
+    test_set = generate_connections(args.n_test_packets, avoid_set=benign_set)
     packed_test = [pack_connection_tuple(*conn) for conn in test_set]
 
     false_positives = sum(1 for item in packed_test if filter.contains(item))
-    # fp_rate = false_positives / args.n_hostile_test_packets
+    # fp_rate = false_positives / args.n_test_packets
 
     print("START RESULT")
     print(false_positives)
