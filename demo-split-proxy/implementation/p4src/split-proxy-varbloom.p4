@@ -121,6 +121,7 @@ struct metadata_t {
     bit<32> bloom_hash;
     bit<32> bloom_hash_1;
     bit<32> bloom_hash_2;
+    bit<32> boom_size;
     // bit<1> active_bloom_filter;
     bit<1> bloom_read_passed;
     
@@ -299,6 +300,20 @@ control SwitchIngress(
     register<bit<1>>(BLOOM_STAGE_SIZE) reg_bloom_1_1;
     // register<bit<1>>(BLOOM_STAGE_SIZE) reg_bloom_1_2;
 
+    // Registers to count the number of elements in the Bloom Filters
+    // TODO: copy this to the other split-proxy versions
+    register<bit<32>>(1) reg_bloom_0_size;
+    register<bit<32>>(1) reg_bloom_1_size;
+
+    action increment_bloom_counters(){
+       reg_bloom_0_size.read(meta.bloom_size, 0);
+       meta.bloom_size = meta.bloom_size + 1;
+       reg_bloom_0_size.write(0, (bit<32>) meta.bloom_size);
+
+       reg_bloom_1_size.read(meta.bloom_size, 0);
+       meta.bloom_size = meta.bloom_size + 1;
+       reg_bloom_1_size.write(0, (bit<32>) meta.bloom_size);
+    }
 
     action calc_bloom_hash_1(){
         hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
@@ -1018,6 +1033,7 @@ control SwitchIngress(
         // Bloom Filter set and get
         
         if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
+            increment_bloom_counters();
             if (N_HASH_FUNCTIONS >= 1) {
                 set_bloom_1_a();
                 if (N_HASH_FUNCTIONS >= 2) {
