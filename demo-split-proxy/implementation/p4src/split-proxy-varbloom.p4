@@ -312,11 +312,6 @@ control SwitchIngress(
             (bit<32>)STAGE_SIZE_MINUS_ONE);
     }
 
-    action calc_bloom_hash_i(bit<32> i){
-        meta.bloom_hash = meta.bloom_hash_2 + (i * meta.bloom_hash_1);
-        modulo_bloom_hash();
-    }
-
     action modulo_bloom_hash(){
         // can do modulo when bloom_hash is up to 14 times the size of STAGE_SIZE
         if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
@@ -356,6 +351,12 @@ control SwitchIngress(
             }
         }
     }
+
+    action calc_bloom_hash_i(bit<32> i){
+        meta.bloom_hash = meta.bloom_hash_2 + (i * meta.bloom_hash_1);
+        modulo_bloom_hash();
+    }
+
 
     action calc_bloom_hash_3(){
         meta.bloom_hash = meta.bloom_hash_2 + meta.bloom_hash_1;
@@ -645,13 +646,13 @@ control SwitchIngress(
 
     action set_bloom_1_a(){
         calc_bloom_hash_1();
-        meta.bloom_hash = meta.bloom_hash_1
+        meta.bloom_hash = meta.bloom_hash_1;
         set_bloom();
     }
 
     action set_bloom_2_a(){
         calc_bloom_hash_2();
-        meta.bloom_hash = meta.bloom_hash_2
+        meta.bloom_hash = meta.bloom_hash_2;
         set_bloom();
     }
 

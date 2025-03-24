@@ -304,47 +304,17 @@ control SwitchIngress(
         reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) 1);
     }
 
-    // action set_bloom_2_a(){
-    //     hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
-    //         {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
-    //         (bit<32>)STAGE_SIZE_MINUS_ONE);
-
-    //     reg_bloom_0_2.write(meta.bloom_hash_2, (bit<1>) 1);
-    //     reg_bloom_1_2.write(meta.bloom_hash_2, (bit<1>) 1);
-    // }
 
     action read_sync_bloom_1(){
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash_1);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash_1);
+        reg_bloom_0_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+        if (meta.bloom_read_1 == 0) {
+            reg_bloom_1_1.read(meta.bloom_read_1, meta.bloom_hash_1);
             // either write 0 in it again or write 1
-            reg_bloom_0_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read);
+            reg_bloom_0_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read_1);
         } else {
-            reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read);
+            reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read_1);
         }
     }
-
-    // action read_sync_bloom_2(){
-    //     reg_bloom_0_2.read(meta.bloom_read, meta.bloom_hash_2);
-    //     if (meta.bloom_read == 0) {
-    //         reg_bloom_1_2.read(meta.bloom_read, meta.bloom_hash_2);
-    //         // either write 0 in it again or write 1
-    //         reg_bloom_0_2.write(meta.bloom_hash_2, (bit<1>) meta.bloom_read);
-    //     } else {
-    //         reg_bloom_1_2.write(meta.bloom_hash_2, (bit<1>) meta.bloom_read);
-    //     }
-    // }
-
-    // action read_sync_bloom_3(){
-    //     reg_bloom_0_3.read(meta.bloom_read, meta.bloom_hash_3);
-    //     if (meta.bloom_read == 0) {
-    //         reg_bloom_1_3.read(meta.bloom_read, meta.bloom_hash_3);
-    //         // either write 0 in it again or write 1
-    //         reg_bloom_0_3.write(meta.bloom_hash_3, (bit<1>) meta.bloom_read);
-    //     } else {
-    //         reg_bloom_1_3.write(meta.bloom_hash_3, (bit<1>) meta.bloom_read);
-    //     }
-    // }
 
     action get_bloom_1_a(){
         hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
@@ -353,23 +323,6 @@ control SwitchIngress(
 
         read_sync_bloom_1();
     }
-
-    // action get_bloom_2_a(){
-    //     hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
-    //         {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
-    //         (bit<32>)STAGE_SIZE_MINUS_ONE);
-        
-    //     read_sync_bloom_2();
-    // }
-
-    // action get_bloom_3_a(){
-    //     meta.bloom_hash_3 = meta.bloom_hash_2 + meta.bloom_hash_1;
-    //     if (meta.bloom_hash_3 > STAGE_SIZE_MINUS_ONE) {
-    //         meta.bloom_hash_3 = meta.bloom_hash_3 - BLOOM_STAGE_SIZE;
-    //     }
-
-    //     read_sync_bloom_3();
-    // }
 
 
     // tb_triage_pkt_types_nextstep actions

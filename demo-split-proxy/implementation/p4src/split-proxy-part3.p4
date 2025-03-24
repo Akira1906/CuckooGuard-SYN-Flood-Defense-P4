@@ -332,35 +332,35 @@ control SwitchIngress(
     }
 
     action read_sync_bloom_1(){
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash_1);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash_1);
+        reg_bloom_0_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+        if (meta.bloom_read_1 == 0) {
+            reg_bloom_1_1.read(meta.bloom_read_1, meta.bloom_hash_1);
             // either write 0 in it again or write 1
-            reg_bloom_0_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read);
+            reg_bloom_0_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read_1);
         } else {
-            reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read);
+            reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) meta.bloom_read_1);
         }
     }
 
     action read_sync_bloom_2(){
-        reg_bloom_0_2.read(meta.bloom_read, meta.bloom_hash_2);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_2.read(meta.bloom_read, meta.bloom_hash_2);
+        reg_bloom_0_2.read(meta.bloom_read_2, meta.bloom_hash_2);
+        if (meta.bloom_read_2 == 0) {
+            reg_bloom_1_2.read(meta.bloom_read_2, meta.bloom_hash_2);
             // either write 0 in it again or write 1
-            reg_bloom_0_2.write(meta.bloom_hash_2, (bit<1>) meta.bloom_read);
+            reg_bloom_0_2.write(meta.bloom_hash_2, (bit<1>) meta.bloom_read_2);
         } else {
-            reg_bloom_1_2.write(meta.bloom_hash_2, (bit<1>) meta.bloom_read);
+            reg_bloom_1_2.write(meta.bloom_hash_2, (bit<1>) meta.bloom_read_2);
         }
     }
 
     action read_sync_bloom_3(){
-        reg_bloom_0_3.read(meta.bloom_read, meta.bloom_hash_3);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_3.read(meta.bloom_read, meta.bloom_hash_3);
+        reg_bloom_0_3.read(meta.bloom_read_3, meta.bloom_hash_3);
+        if (meta.bloom_read_3 == 0) {
+            reg_bloom_1_3.read(meta.bloom_read_3, meta.bloom_hash_3);
             // either write 0 in it again or write 1
-            reg_bloom_0_3.write(meta.bloom_hash_3, (bit<1>) meta.bloom_read);
+            reg_bloom_0_3.write(meta.bloom_hash_3, (bit<1>) meta.bloom_read_3);
         } else {
-            reg_bloom_1_3.write(meta.bloom_hash_3, (bit<1>) meta.bloom_read);
+            reg_bloom_1_3.write(meta.bloom_hash_3, (bit<1>) meta.bloom_read_3);
         }
     }
 
