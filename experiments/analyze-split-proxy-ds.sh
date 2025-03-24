@@ -14,9 +14,11 @@ N_BUCKETS=""
 N_BENIGN_CONNECTIONS=""
 N_TEST_PACKETS=""
 NO_CONTROLLER=false
+FILTER_TIME_DECAY="99999999999"
+DEBUG=false
 
 # Process named arguments
-ARGS=$(getopt -o a:f:p:t:s:g:b:c:h:n: --long app_path:,fn_suffix:,fp_test:,test_name:,filter_size:,fingerprint_size:,n_buckets:,n_benign_connections:,n_test_packets:,no_controller -- "$@")
+ARGS=$(getopt -o a:f:p:t:s:g:b:c:h:n:d:x --long app_path:,fn_suffix:,fp_test:,test_name:,filter_size:,fingerprint_size:,n_buckets:,n_benign_connections:,n_test_packets:,no_controller,filter_time_decay:,debug -- "$@")
 if [[ $? -ne 0 ]]; then
     echo "Error: Invalid arguments"
     exit 1
@@ -36,6 +38,8 @@ while true; do
         -c|--n_benign_connections) N_BENIGN_CONNECTIONS="$2"; shift 2 ;;
         -h|--n_test_packets) N_TEST_PACKETS="$2"; shift 2 ;;
         -n|--no_controller) NO_CONTROLLER=true; shift ;;
+        -d|--filter_time_decay) FILTER_TIME_DECAY="$2"; shift 2 ;;
+        -x|--debug) DEBUG=true; shift ;;
         --) shift; break ;;
         *) break ;;
     esac
@@ -43,7 +47,7 @@ done
 
 # Ensure required parameters are provided
 if [[ -z "$APP_PATH" || -z "$FN_SUFFIX" || -z "$FP_TEST" || -z "$TEST_NAME" || -z "$FILTER_SIZE" || -z "$FINGERPRINT_SIZE" || -z "$N_BUCKETS" || -z "$N_BENIGN_CONNECTIONS" || -z "$N_TEST_PACKETS" ]]; then
-    echo "Usage: $0 --app_path <path> --fn_suffix <suffix> --fp_test <test_folder> --test_name <name> --filter_size <size> --fingerprint_size <size> --n_buckets <count> --n_benign_connections <count> --n_test_packets <count> [--no_controller]"
+    echo "Usage: $0 --app_path <path> --fn_suffix <suffix> --fp_test <test_folder> --test_name <name> --filter_size <size> --fingerprint_size <size> --n_buckets <count> --n_benign_connections <count> --n_test_packets <count> [--no_controller] [--filter_time_decay <value in seconds>] [--debug]"
     exit 1
 fi
 
@@ -126,17 +130,29 @@ sudo sysctl net.ipv6.conf.veth7.disable_ipv6=1
 /bin/rm -f "logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log.3.txt"
 /bin/rm -f "logs/$TEST_NAME-ebpf-$FN_SUFFIX.log"
 
-sudo simple_switch_grpc \
-     --device-id 1 \
-     -i 1@veth0 \
-     -i 2@veth2 \
-     -i 3@veth4 \
-     -i 68@veth6 \
-     -i 196@veth7 \
-     --no-p4 &
-    #  --log-file "logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log" \
-    #  --log-flush \
-    #  --dump-packet-data 10000 \
+if [[ "$DEBUG" == true ]]; then
+    sudo simple_switch_grpc \
+        --device-id 1 \
+        -i 1@veth0 \
+        -i 2@veth2 \
+        -i 3@veth4 \
+        -i 68@veth6 \
+        -i 196@veth7 \
+        --log-flush \
+        --log-console \
+        --dump-packet-data 10000 \
+        --no-p4 &
+        # --log-file "logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log" \
+else
+    sudo simple_switch_grpc \
+        --device-id 1 \
+        -i 1@veth0 \
+        -i 2@veth2 \
+        -i 3@veth4 \
+        -i 68@veth6 \
+        -i 196@veth7 \
+        --no-p4 &
+fi
 echo "Started simple_switch_grpc..."
 
 BPFIFACE="veth5"
@@ -171,7 +187,7 @@ echo "Attached eBPF programs to the server's interface ($BPFIFACE)"
 if ! $NO_CONTROLLER; then
     echo "Start SYN-Cookie Control Plane application"
     cd "$APP_PATH/implementation"
-    python3 -u controller_grpc.py --time_decay 999999 --file_suffix $FN_SUFFIX &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
+    python3 -u controller_grpc.py --time_decay $FILTER_TIME_DECAY --file_suffix $FN_SUFFIX &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
     cd ../../experiments
 fi
 

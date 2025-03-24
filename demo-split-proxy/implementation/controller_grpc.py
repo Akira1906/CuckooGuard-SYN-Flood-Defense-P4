@@ -90,6 +90,8 @@ class ThriftController():
             print(f"Reset Bloom Register: reg_bloom_{delete_bloom_id}_*")
             self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_1")
             self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_2")
+            # Reset Bloom Counter
+            self.ss.register_reset(F"reg_bloom_{delete_bloom_id}_size")
             
             delete_bloom_id = (delete_bloom_id + 1) % 2
 

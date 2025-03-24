@@ -121,7 +121,7 @@ struct metadata_t {
     bit<32> bloom_hash;
     bit<32> bloom_hash_1;
     bit<32> bloom_hash_2;
-    bit<32> boom_size;
+    bit<32> bloom_size;
     // bit<1> active_bloom_filter;
     bit<1> bloom_read_passed;
     

@@ -4,16 +4,16 @@
     AVAILABLE_MEMORY_BIT=84227
     N_BENIGN_CONNECTIONS=5000
     N_TEST_PACKETS=40000
-    ALWAYS_RETEST=false
+    ALWAYS_RETEST=true
     CUCKOO_VAR_LOAD=0.85
 
-    run_bloom_part1=false
-    run_bloom_part2=false
-    run_bloom_part3=false
-    run_varbloom=false
-    run_varbloom_time_decay=false
-    run_cuckoo=false
-    run_cuckoo_var_load=false
+    run_bloom_part1=true
+    run_bloom_part2=true
+    run_bloom_part3=true
+    run_varbloom=true
+    run_varbloom_time_decay=true
+    run_cuckoo=true
+    run_cuckoo_var_load=true
     
 
 # Process named arguments
@@ -257,6 +257,7 @@
     fp_hits_varbloom_time_decay=0
     fp_hits_cuckoo=0
     fp_hits_cuckoo_var_load=0  # Added for Cuckoo Filter Var Load Factor
+    fp_hits_cuckoo_py=0
 
 # Bloom Filter (Partitioned with 1 stage)
     bloom_size_std=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT)}")
@@ -659,15 +660,15 @@
     exp_fp_rate_cuckoo_py=$theo_fp_rate_cuckoo
     exp_fp_rate_cuckoo_var_load=$theo_fp_rate_cuckoo_var_load
 
-# Calculate fake fp_hits from theoretical values
-    fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_TEST_PACKETS)}")
-    fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_TEST_PACKETS)}")
-    fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_TEST_PACKETS)}")
-    fp_hits_varbloom=$(awk "BEGIN {print int($theo_fp_rate_varbloom * $N_TEST_PACKETS)}")
-    fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_TEST_PACKETS)}")
-    fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
-    fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
-    fp_hits_cuckoo_var_load=$(awk "BEGIN {print int($theo_fp_rate_cuckoo_var_load * $N_TEST_PACKETS)}")
+    # Calculate fake fp_hits from theoretical values
+        fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_TEST_PACKETS)}")
+        fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_TEST_PACKETS)}")
+        fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_TEST_PACKETS)}")
+        fp_hits_varbloom=$(awk "BEGIN {print int($theo_fp_rate_varbloom * $N_TEST_PACKETS)}")
+        fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_TEST_PACKETS)}")
+        fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
+        fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
+        fp_hits_cuckoo_var_load=$(awk "BEGIN {print int($theo_fp_rate_cuckoo_var_load * $N_TEST_PACKETS)}")
 
 # Print the results
     echo "========================================================="
