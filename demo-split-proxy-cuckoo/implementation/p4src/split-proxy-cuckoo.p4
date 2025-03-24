@@ -395,10 +395,9 @@ control SwitchIngress(
             (bit<32>) 65535);
     }
 
-    direct_counter(CounterType.packets) ingressCounter;
+    
 
     table tb_triage_pkt_types_nextstep {
-        counters = ingressCounter;
         key = {
             meta.tcp_valid: exact;
             meta.udp_payload_valid: exact;
@@ -824,9 +823,11 @@ control SwitchIngress(
     }
 
 
+    counter(1, CounterType.packets) ingressCounter;
+
     apply {
-        // // Count packets on ingress
-        // ingressCounter.count();
+        // Count packets on ingress
+        ingressCounter.count(0);
 
         // Timedelta verification and setup
         timedelta_step0();

@@ -26,6 +26,14 @@ class P4RuntimeController():
         )
 
         self.configure_tables()
+        self.read_counter()
+        
+    def read_counter(self):
+        while(True):
+            count = self.ss.counter_read("ingressCounter", 0)
+            # count = self.ss.direct_counter_read("ingressCounter")
+            print(count)
+            sleep(2)
 
     def configure_tables(self):
         """Configures the necessary table entries in the P4 switch."""

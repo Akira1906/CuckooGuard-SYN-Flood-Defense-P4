@@ -1,6 +1,6 @@
 AVAILABLE_MEMORY_BIT=84227
 N_BENIGN_CONNECTIONS=5000 # standard at 0.95
-N_TEST_PACKETS=1000
+N_TEST_PACKETS=3000
 a=0.95
 
 b=4 # number of entries per bucket
@@ -54,7 +54,7 @@ save_experiment_json() {
     echo "✅ Experiment saved to $results_json"
 }
 
-for load_factor in $(seq 0.3 0.1 0.9); do
+for load_factor in $(seq 0.3 0.05 0.95); do
     echo "Start experiment run with load factor: $load_factor"
 
     n_preloaded_connections=$(awk "BEGIN {print int($n_fingerprints * $load_factor)}")
@@ -66,13 +66,11 @@ for load_factor in $(seq 0.3 0.1 0.9); do
             --n_buckets $n_buckets \
             --n_benign_connections $n_preloaded_connections \
             --n_test_packets $N_TEST_PACKETS \
+            --no_controller \
             > results/recirc_cuckoo_results.txt
     
     packet_count=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/recirc_cuckoo_results.txt)
     echo "packet_count: $packet_count"
-    packet_count=$(awk "BEGIN {print int($packet_count - $n_preloaded_connections)}")
-    echo "packet_count: $packet_count"
     # Save experiment results to JSON history
     save_experiment_json
-    exit 1
 done

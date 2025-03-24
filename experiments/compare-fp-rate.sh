@@ -5,6 +5,7 @@
     N_BENIGN_CONNECTIONS=5000
     N_TEST_PACKETS=40000
     ALWAYS_RETEST=false
+    CUCKOO_VAR_LOAD=0.85
 
     run_bloom_part1=false
     run_bloom_part2=false
@@ -12,11 +13,12 @@
     run_varbloom=false
     run_varbloom_time_decay=false
     run_cuckoo=false
+    run_cuckoo_var_load=false
     
 
 # Process named arguments
-    ARGS=$(getopt -o c:h:m:r:o: --long \
-        n_benign_connections:,n_test_packets:,available_memory_bit:,always_retest:,output_file: \
+    ARGS=$(getopt -o c:h:m:r:o:l: --long \
+        n_benign_connections:,n_test_packets:,available_memory_bit:,always_retest:,output_file:,cuckoo_var_load: \
         -- "$@")
 
     if [[ $? -ne 0 ]]; then
@@ -33,6 +35,7 @@
             -m|--available_memory_bit) AVAILABLE_MEMORY_BIT="$2"; shift 2 ;;
             -r|--always_retest) ALWAYS_RETEST="$2"; shift 2 ;;
             -o|--output_file) OUTPUT_FILE="$2"; shift 2 ;;
+            -l|--cuckoo_var_load) CUCKOO_VAR_LOAD="$2"; shift 2 ;;
             --) shift; break ;;
             *) break ;;
         esac
@@ -61,6 +64,8 @@
             --arg fp_hits_varbloom "$fp_hits_varbloom" \
             --arg fp_hits_varbloom_time_decay "$fp_hits_varbloom_time_decay" \
             --arg fp_hits_cuckoo "$fp_hits_cuckoo" \
+            --arg fp_hits_cuckoo_var_load "$fp_hits_cuckoo_var_load" \
+            --arg load_factor_cuckoo_var_load "$CUCKOO_VAR_LOAD" \
             --arg exp_fp_rate_bloom_part_2 "$exp_fp_rate_bloom_part_2" \
             --arg exp_fp_rate_bloom_part_3 "$exp_fp_rate_bloom_part_3" \
             --arg exp_fp_rate_bloom_std "$exp_fp_rate_bloom_std" \
@@ -68,9 +73,13 @@
             --arg exp_fp_rate_varbloom_time_decay "$exp_fp_rate_varbloom_time_decay" \
             --arg exp_fp_rate_cuckoo "$exp_fp_rate_cuckoo" \
             --arg exp_fp_rate_cuckoo_ss "$exp_fp_rate_cuckoo_ss" \
+            --arg exp_fp_rate_cuckoo_var_load "$exp_fp_rate_cuckoo_var_load" \
             --arg fingerprint_size "$fingerprint_size" \
             --arg n_buckets "$n_buckets" \
             --arg n_fingerprints "$n_fingerprints" \
+            --arg fingerprint_size_var "$fingerprint_size_var" \
+            --arg n_buckets_var "$n_buckets_var" \
+            --arg n_fingerprints_var "$n_fingerprints_var" \
             '{
                 "timestamp": $timestamp,
                 "available_memory_bit": $available_memory_bit | tonumber,
@@ -108,6 +117,14 @@
                     "fp_hits": $fp_hits_cuckoo | tonumber,
                     "fp_rate": $exp_fp_rate_cuckoo | tonumber,
                     "fp_rate_ss": $exp_fp_rate_cuckoo_ss | tonumber
+                },
+                "cuckoo_var_load": {
+                    "fingerprint_size": $fingerprint_size_var | tonumber,
+                    "n_buckets": $n_buckets_var | tonumber,
+                    "n_fingerprints": $n_fingerprints_var | tonumber,
+                    "fp_hits": $fp_hits_cuckoo_var_load | tonumber,
+                    "fp_rate": $exp_fp_rate_cuckoo_var_load | tonumber,
+                    "load_factor" : $load_factor_cuckoo_var_load | tonumber
                 }
             }')
 
@@ -171,6 +188,17 @@
                         should_rerun=false
                         fp_hits_cuckoo=$(echo "$last_exp" | jq '.cuckoo.fp_hits')
                     fi
+                elif [[ "$filter_type" == "cuckoo_var_load" ]]; then
+                    last_cuckoo_var_load_fpsize=$(echo "$last_exp" | jq '.cuckoo_var_load.fingerprint_size')
+                    last_cuckoo_var_load_buckets=$(echo "$last_exp" | jq '.cuckoo_var_load.n_buckets')
+
+                    if [[ "$last_cuckoo_var_load_fpsize" == "$fingerprint_size_var" &&
+                        "$last_cuckoo_var_load_buckets" == "$n_buckets_var" &&
+                        "$ALWAYS_RETEST" == "false"  && "$run_cuckoo" == "false" ]]; then
+                        echo "⚠️  Cuckoo Filter Var Load Factor parameters unchanged — skipping test."
+                        should_rerun=false
+                        fp_hits_cuckoo_var_load=$(echo "$last_exp" | jq '.cuckoo_var_load.fp_hits')
+                    fi
                 elif [[ "$filter_type" == "bloom_part_3" ]]; then
                     last_bloom_size_part_3=$(echo "$last_exp" | jq '.bloom_part_3.size_bits')
                     
@@ -228,6 +256,7 @@
     fp_hits_varbloom=0
     fp_hits_varbloom_time_decay=0
     fp_hits_cuckoo=0
+    fp_hits_cuckoo_var_load=0  # Added for Cuckoo Filter Var Load Factor
 
 # Bloom Filter (Partitioned with 1 stage)
     bloom_size_std=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT)}")
@@ -496,6 +525,48 @@
         fp_hits_cuckoo_py=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_cucko_py_results.txt)
     fi
 
+# Cuckoo Filter Var Load Factor
+    b=4 # number of entries per bucket
+    n=$N_BENIGN_CONNECTIONS # number of items
+    a_var=$CUCKOO_VAR_LOAD # load factor for var load factor experiment
+
+    # Compute minimum needed entries (round down)
+    min_needed_empty_spaces_var=$(awk "BEGIN {print int($n / $a_var)}")
+    # Compute fingerprint size (round down)
+    fingerprint_size_var=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / $min_needed_empty_spaces_var)}")
+    # Compute number of buckets (round down)
+    n_buckets_var=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / ($fingerprint_size_var * $b))}")
+    # Compute total number of fingerprints
+    n_fingerprints_var=$(awk "BEGIN {print int($n_buckets_var * $b)}")
+
+    echo "----------------------------------"
+    echo "Computed Cuckoo Filter Var Load Factor Parameters:"
+    echo "  - Available Memory: $AVAILABLE_MEMORY_BIT bits"
+    echo "  - Number of Items: $n"
+    echo "  - Load Factor: $a_var"
+    echo "  - Minimum Needed Entries: $min_needed_empty_spaces_var"
+    echo "  - Fingerprint Size: $fingerprint_size_var bits"
+    echo "  - Number of Buckets: $n_buckets_var"
+    echo "  - Total Number of Fingerprints: $n_fingerprints_var"
+    echo "----------------------------------"
+
+    should_rerun_experiment "cuckoo_var_load"
+    if [[ "$should_rerun" == "true" && "$run_cuckoo_var_load" == "true" ]]; then
+        echo "Running Cuckoo Filter Var Load Factor experiment..."
+        ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy-cuckoo" --fn_suffix cuckoo \
+            --fp_test ptf-measure-fp-ds --test_name cuckoo_var_load_fp_test \
+            --filter_size $n_fingerprints_var \
+            --fingerprint_size $fingerprint_size_var \
+            --n_buckets $n_buckets_var \
+            --n_benign_connections $N_BENIGN_CONNECTIONS \
+            --n_test_packets $N_TEST_PACKETS \
+            > results/fp_cuckoo_var_load_results.txt
+
+        fp_hits_cuckoo_var_load=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/fp_cuckoo_var_load_results.txt)
+    else
+        echo "Using cached Cuckoo Filter Var Load Factor results."
+    fi
+
 # Calculate the experimental FP rates
     exp_fp_rate_bloom_part_2=$(awk "BEGIN {print ($fp_hits_bloom_part_2 / ($N_TEST_PACKETS))}")
     exp_fp_rate_bloom_part_3=$(awk "BEGIN {print ($fp_hits_bloom_part_3 / ($N_TEST_PACKETS))}")
@@ -505,6 +576,7 @@
     exp_fp_rate_cuckoo=$(awk "BEGIN {print ($fp_hits_cuckoo / ($N_TEST_PACKETS))}")
     exp_fp_rate_cuckoo_ss=0
     exp_fp_rate_cuckoo_py=$(awk "BEGIN {print ($fp_hits_cuckoo_py / ($N_TEST_PACKETS))}")
+    exp_fp_rate_cuckoo_var_load=$(awk "BEGIN {print ($fp_hits_cuckoo_var_load / ($N_TEST_PACKETS))}")
 
 
 # Calculation of the theoretical exact ideal FP rates
@@ -568,6 +640,14 @@
         print theo_fp_rate;
     }')
 
+    # Cuckoo Filter Var Load Factor
+    real_a_var=$(awk "BEGIN {print ($N_BENIGN_CONNECTIONS / $n_fingerprints_var)}")
+    theo_fp_rate_cuckoo_var_load=$(awk -v b="$b" -v a="$real_a_var" '
+    BEGIN {
+        theo_fp_rate = 1/(2^((b * a) - 3))
+        print theo_fp_rate;
+    }')
+
 # Swap experimental FP rates with theoretical FP rates
     exp_fp_rate_bloom_part_2=$theo_fp_rate_bloom_part_2
     exp_fp_rate_bloom_part_3=$theo_fp_rate_bloom_part_3
@@ -577,6 +657,7 @@
     exp_fp_rate_cuckoo=$theo_fp_rate_cuckoo
     exp_fp_rate_cuckoo_ss=$theo_fp_rate_cuckoo_ss
     exp_fp_rate_cuckoo_py=$theo_fp_rate_cuckoo
+    exp_fp_rate_cuckoo_var_load=$theo_fp_rate_cuckoo_var_load
 
 # Calculate fake fp_hits from theoretical values
     fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_TEST_PACKETS)}")
@@ -586,53 +667,55 @@
     fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_TEST_PACKETS)}")
     fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
     fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
+    fp_hits_cuckoo_var_load=$(awk "BEGIN {print int($theo_fp_rate_cuckoo_var_load * $N_TEST_PACKETS)}")
 
 # Print the results
     echo "========================================================="
     echo "|                  False Positive Rates                 |"
     echo "========================================================="
-    printf "| %-30s | %-12s | %-10s |\n" "Filter Type" "Theore. FP" "Experi. FP"
+    printf "| %-34s | %-12s | %-12s |\n" "Filter Type" "Theore. FP" "Experi. FP"
     echo "---------------------------------------------------------"
 
-    printf "| %-30s | %-12s | %-10s |\n" "Bloom Filter (1 Part.)" \
+    printf "| %-34s | %-12s | %-12s |\n" "Bloom Filter (1 Part.)" \
         "$theo_fp_rate_bloom_std" \
         "$exp_fp_rate_bloom_std"
 
-    printf "| %-30s | %-12s | %-10s |\n" "Bloom Filter (2 Part.)" \
+    printf "| %-34s | %-12s | %-12s |\n" "Bloom Filter (2 Part.)" \
         "$theo_fp_rate_bloom_part_2" \
         "$exp_fp_rate_bloom_part_2"
 
-    printf "| %-30s | %-12s | %-10s |\n" "Bloom Filter (3 Part.)" \
+    printf "| %-34s | %-12s | %-12s |\n" "Bloom Filter (3 Part.)" \
         "$theo_fp_rate_bloom_part_3" \
         "$exp_fp_rate_bloom_part_3"
 
-    printf "| %-30s | %-12s | %-10s |\n" "Partitioned 'VarBloom' Filter" \
+    printf "| %-34s | %-12s | %-12s |\n" "Partitioned 'VarBloom' Filter" \
         "$theo_fp_rate_bloom_part_k" \
         "N/A"
 
-    printf "| %-30s | %-12s | %-10s |\n" "'VarBloom' Filter" \
+    printf "| %-34s | %-12s | %-12s |\n" "'VarBloom' Filter" \
         "$theo_fp_rate_varbloom" \
         "$exp_fp_rate_varbloom"
 
-    printf "| %-30s | %-12s | %-10s |\n" "'VarBloom Time-Decay' Filter" \
+    printf "| %-34s | %-12s | %-12s |\n" "'VarBloom Time-Decay' Filter" \
         "$theo_fp_rate_varbloom_time_decay" \
         "$exp_fp_rate_varbloom_time_decay"
 
-    printf "| %-30s | %-12s | %-10s |\n" "Cuckoo Filter" \
+    printf "| %-34s | %-12s | %-12s |\n" "Cuckoo Filter" \
         "$theo_fp_rate_cuckoo" \
         "$exp_fp_rate_cuckoo"
 
-    printf "| %-30s | %-12s | %-10s |\n" "Cuckoo Filter Python" \
+    printf "| %-34s | %-12s | %-12s |\n" "Cuckoo Filter Python" \
         "$theo_fp_rate_cuckoo" \
         "$exp_fp_rate_cuckoo_py"
 
-    printf "| %-30s | %-12s | %-10s |\n" "SS Cuckoo Filter" \
+    printf "| %-34s | %-12s | %-12s |\n" "SS Cuckoo Filter" \
         "$theo_fp_rate_cuckoo_ss" \
         "$exp_fp_rate_cuckoo_ss"
 
-    # Print the footer
-    echo "---------------------------------------------------------"
-    echo "| (Cuckoo theoretical values are upper bounds; ideal values might be slightly lower) |"
+    printf "| %-34s | %-12s | %-12s |\n" "Cuckoo Filter Var Load ($CUCKOO_VAR_LOAD %)" \
+        "$theo_fp_rate_cuckoo_var_load" \
+        "$exp_fp_rate_cuckoo_var_load"
+
     echo "========================================================="
 
 

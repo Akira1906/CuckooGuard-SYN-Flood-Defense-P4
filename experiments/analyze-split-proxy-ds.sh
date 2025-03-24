@@ -13,9 +13,10 @@ FINGERPRINT_SIZE=""
 N_BUCKETS=""
 N_BENIGN_CONNECTIONS=""
 N_TEST_PACKETS=""
+NO_CONTROLLER=false
 
 # Process named arguments
-ARGS=$(getopt -o a:f:p:t:s:g:b:c:h: --long app_path:,fn_suffix:,fp_test:,test_name:,filter_size:,fingerprint_size:,n_buckets:,n_benign_connections:,n_test_packets: -- "$@")
+ARGS=$(getopt -o a:f:p:t:s:g:b:c:h:n: --long app_path:,fn_suffix:,fp_test:,test_name:,filter_size:,fingerprint_size:,n_buckets:,n_benign_connections:,n_test_packets:,no_controller -- "$@")
 if [[ $? -ne 0 ]]; then
     echo "Error: Invalid arguments"
     exit 1
@@ -34,6 +35,7 @@ while true; do
         -b|--n_buckets) N_BUCKETS="$2"; shift 2 ;;
         -c|--n_benign_connections) N_BENIGN_CONNECTIONS="$2"; shift 2 ;;
         -h|--n_test_packets) N_TEST_PACKETS="$2"; shift 2 ;;
+        -n|--no_controller) NO_CONTROLLER=true; shift ;;
         --) shift; break ;;
         *) break ;;
     esac
@@ -41,7 +43,7 @@ done
 
 # Ensure required parameters are provided
 if [[ -z "$APP_PATH" || -z "$FN_SUFFIX" || -z "$FP_TEST" || -z "$TEST_NAME" || -z "$FILTER_SIZE" || -z "$FINGERPRINT_SIZE" || -z "$N_BUCKETS" || -z "$N_BENIGN_CONNECTIONS" || -z "$N_TEST_PACKETS" ]]; then
-    echo "Usage: $0 --app_path <path> --fn_suffix <suffix> --fp_test <test_folder> --test_name <name> --filter_size <size> --fingerprint_size <size> --n_buckets <count> --n_benign_connections <count> --n_test_packets <count>"
+    echo "Usage: $0 --app_path <path> --fn_suffix <suffix> --fp_test <test_folder> --test_name <name> --filter_size <size> --fingerprint_size <size> --n_buckets <count> --n_benign_connections <count> --n_test_packets <count> [--no_controller]"
     exit 1
 fi
 
@@ -166,11 +168,13 @@ sudo cat /sys/kernel/tracing/trace_pipe >> "logs/$TEST_NAME-ebpf-$FN_SUFFIX.log"
 
 echo "Attached eBPF programs to the server's interface ($BPFIFACE)"
 
+if ! $NO_CONTROLLER; then
+    echo "Start SYN-Cookie Control Plane application"
+    cd "$APP_PATH/implementation"
+    python3 -u controller_grpc.py --time_decay 999999 --file_suffix $FN_SUFFIX &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
+    cd ../../experiments
+fi
 
-echo "Start SYN-Cookie Control Plane application"
-cd "$APP_PATH/implementation"
-python3 -u controller_grpc.py --time_decay 999999 --file_suffix $FN_SUFFIX &> "../../experiments/logs/$TEST_NAME-controller-$FN_SUFFIX.log" &
-cd ../../experiments
 
 sleep 1
 
