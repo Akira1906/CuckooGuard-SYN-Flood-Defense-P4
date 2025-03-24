@@ -312,6 +312,51 @@ control SwitchIngress(
             (bit<32>)STAGE_SIZE_MINUS_ONE);
     }
 
+    action calc_bloom_hash_i(bit<32> i){
+        meta.bloom_hash = meta.bloom_hash_2 + (i * meta.bloom_hash_1);
+        modulo_bloom_hash();
+    }
+
+    action modulo_bloom_hash(){
+        // can do modulo when bloom_hash is up to 14 times the size of STAGE_SIZE
+        if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+            meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+            if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                    meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                    if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                        meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                        if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                            meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                            if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                                meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                                if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                                    meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                                    if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                                        meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                                        if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                                            meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                                            if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                                                meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                                                if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                                                    meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                                                    if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
+                                                        meta.bloom_hash = meta.bloom_hash - BLOOM_STAGE_SIZE;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     action calc_bloom_hash_3(){
         meta.bloom_hash = meta.bloom_hash_2 + meta.bloom_hash_1;
         if (meta.bloom_hash > STAGE_SIZE_MINUS_ONE) {
@@ -593,200 +638,164 @@ control SwitchIngress(
         }
     }
 
+    action set_bloom() {
+        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
+        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+    }
+
     action set_bloom_1_a(){
         calc_bloom_hash_1();
-        reg_bloom_0_1.write(meta.bloom_hash_1, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash_1, (bit<1>) 1);
+        meta.bloom_hash = meta.bloom_hash_1
+        set_bloom();
     }
 
     action set_bloom_2_a(){
         calc_bloom_hash_2();
-        reg_bloom_0_1.write(meta.bloom_hash_2, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash_2, (bit<1>) 1);
+        meta.bloom_hash = meta.bloom_hash_2
+        set_bloom();
     }
 
     action set_bloom_3_a(){
         calc_bloom_hash_3();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_4_a(){
         calc_bloom_hash_4();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_5_a(){
         calc_bloom_hash_5();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_6_a(){
         calc_bloom_hash_6();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_7_a(){
         calc_bloom_hash_7();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_8_a(){
         calc_bloom_hash_8();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_9_a(){
         calc_bloom_hash_9();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_10_a(){
         calc_bloom_hash_10();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_11_a(){
         calc_bloom_hash_11();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_12_a(){
         calc_bloom_hash_12();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
     }
 
     action set_bloom_13_a(){
         calc_bloom_hash_13();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
-        }
+        set_bloom();
+    }
 
     action set_bloom_14_a(){
         calc_bloom_hash_14();
-        reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
-        reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
+        set_bloom();
+    }
+
+    action read_sync_bloom(){
+        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
+        if (meta.bloom_read == 0) {
+            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
+            // either write 0 in it again or write 1
+            reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) meta.bloom_read);
+        } else {
+            reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) meta.bloom_read);
         }
+    }
 
     action get_bloom_1_a(){
         calc_bloom_hash_1();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash_1);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash_1);
-        }
+        meta.bloom_hash = meta.bloom_hash_1;
+        read_sync_bloom();
     }
 
     action get_bloom_2_a(){
         calc_bloom_hash_2();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash_2);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash_2);
-        }
+        meta.bloom_hash = meta.bloom_hash_2;
+        read_sync_bloom();
     }
 
     action get_bloom_3_a(){
         calc_bloom_hash_3();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_4_a(){
         calc_bloom_hash_4();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
-        }
+        read_sync_bloom();
+    }
 
     action get_bloom_5_a(){
         calc_bloom_hash_5();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_6_a(){
         calc_bloom_hash_6();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_7_a(){
         calc_bloom_hash_7();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_8_a(){
         calc_bloom_hash_8();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_9_a(){
         calc_bloom_hash_9();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_10_a(){
         calc_bloom_hash_10();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_11_a(){
         calc_bloom_hash_11();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_12_a(){
         calc_bloom_hash_12();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_13_a(){
         calc_bloom_hash_13();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     action get_bloom_14_a(){
         calc_bloom_hash_14();
-        reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-        }
+        read_sync_bloom();
     }
 
     // tb_triage_pkt_types_nextstep actions
