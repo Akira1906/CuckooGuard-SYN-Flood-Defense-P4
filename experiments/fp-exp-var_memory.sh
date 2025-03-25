@@ -6,5 +6,8 @@ for memory in $(seq 50000 1000 100000); do
         --n_test_packets 100000 \
         --available_memory_bit $memory \
         --always_retest True \
-        --output_file results/fp-var_memory.json
+        --output_file results/fp-var_memory.json \
+        --fake
 done
+
+python fp-exp-var_memory_visualize.py

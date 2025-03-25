@@ -8,5 +8,8 @@ for load_factor in $(seq 0.3 0.05 0.95); do
         --available_memory_bit 84227 \
         --always_retest True \
         --output_file results/fp-var_cf_load_factor.json\
-        --cuckoo_var_load $load_factor
+        --cuckoo_var_load $load_factor \
+        --fake
 done
+
+python fp-exp-var_cf_load_factor_visualize.py

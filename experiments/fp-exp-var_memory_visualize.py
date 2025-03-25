@@ -113,13 +113,8 @@ def main(json_file):
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python plot_fp_rates.py path/to/results.json")
-        sys.exit(1)
+    json_file_name = "results/fp-var_memory.json"  # Hardcoded relative path to the JSON file
+    json_path = os.path.abspath(json_file_name)
 
-    json_path = sys.argv[1]
-    if not os.path.exists(json_path):
-        print(f"Error: File '{json_path}' not found.")
-        sys.exit(1)
 
     main(json_path)

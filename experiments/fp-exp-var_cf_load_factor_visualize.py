@@ -122,13 +122,8 @@ def main(json_file):
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python fp-exp-var_cf_load_factor_visualize.py path/to/results.json")
-        sys.exit(1)
-
-    json_path = sys.argv[1]
-    if not os.path.exists(json_path):
-        print(f"Error: File '{json_path}' not found.")
-        sys.exit(1)
+    
+    json_file_name = "results/fp-var_cf_load_factor.json"  # Hardcoded relative path to the JSON file
+    json_path = os.path.abspath(json_file_name)
 
     main(json_path)
