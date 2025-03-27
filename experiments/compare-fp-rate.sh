@@ -298,7 +298,7 @@
     fi
 
 
-# Bloom Filter (Partitioned with 2 stages):
+# Bloom Filter (Partitioned with 2 stages)
     bloom_size_part_2=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / 2)}")
 
     echo "----------------------------------"
@@ -354,7 +354,7 @@
     fi
 
 
-# VarBloom Filter: compute local test parameters
+# VarBloom Filter
     varbloom_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT)}")
     hash_k=9
 
@@ -409,7 +409,7 @@
     fi
 
 
-# VarBloom Time-Decay Filter: compute local test parameters
+# VarBloom Time-Decay Filter
     varbloom_time_decay_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / 2)}")
     hash_k_time_decay=9
 
@@ -662,28 +662,28 @@
     }')
 
 # Fake the experimental results and just use the calculated ones instead
-if [ "$FAKE" = true ]; then
-    # Swap experimental FP rates with theoretical FP rates
-    exp_fp_rate_bloom_part_2=$theo_fp_rate_bloom_part_2
-    exp_fp_rate_bloom_part_3=$theo_fp_rate_bloom_part_3
-    exp_fp_rate_bloom_std=$theo_fp_rate_bloom_std
-    exp_fp_rate_varbloom=$theo_fp_rate_varbloom
-    exp_fp_rate_varbloom_time_decay=$theo_fp_rate_varbloom_time_decay
-    exp_fp_rate_cuckoo=$theo_fp_rate_cuckoo
-    exp_fp_rate_cuckoo_ss=$theo_fp_rate_cuckoo_ss
-    exp_fp_rate_cuckoo_py=$theo_fp_rate_cuckoo
-    exp_fp_rate_cuckoo_var_load=$theo_fp_rate_cuckoo_var_load
+    if [ "$FAKE" = true ]; then
+        # Swap experimental FP rates with theoretical FP rates
+        exp_fp_rate_bloom_part_2=$theo_fp_rate_bloom_part_2
+        exp_fp_rate_bloom_part_3=$theo_fp_rate_bloom_part_3
+        exp_fp_rate_bloom_std=$theo_fp_rate_bloom_std
+        exp_fp_rate_varbloom=$theo_fp_rate_varbloom
+        exp_fp_rate_varbloom_time_decay=$theo_fp_rate_varbloom_time_decay
+        exp_fp_rate_cuckoo=$theo_fp_rate_cuckoo
+        exp_fp_rate_cuckoo_ss=$theo_fp_rate_cuckoo_ss
+        exp_fp_rate_cuckoo_py=$theo_fp_rate_cuckoo
+        exp_fp_rate_cuckoo_var_load=$theo_fp_rate_cuckoo_var_load
 
-    # Calculate fake fp_hits from theoretical values
-    fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_TEST_PACKETS)}")
-    fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_TEST_PACKETS)}")
-    fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_TEST_PACKETS)}")
-    fp_hits_varbloom=$(awk "BEGIN {print int($theo_fp_rate_varbloom * $N_TEST_PACKETS)}")
-    fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_TEST_PACKETS)}")
-    fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
-    fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
-    fp_hits_cuckoo_var_load=$(awk "BEGIN {print int($theo_fp_rate_cuckoo_var_load * $N_TEST_PACKETS)}")
-fi
+        # Calculate fake fp_hits from theoretical values
+        fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_TEST_PACKETS)}")
+        fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_TEST_PACKETS)}")
+        fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_TEST_PACKETS)}")
+        fp_hits_varbloom=$(awk "BEGIN {print int($theo_fp_rate_varbloom * $N_TEST_PACKETS)}")
+        fp_hits_varbloom_time_decay=$(awk "BEGIN {print int($theo_fp_rate_varbloom_time_decay * $N_TEST_PACKETS)}")
+        fp_hits_cuckoo=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
+        fp_hits_cuckoo_py=$(awk "BEGIN {print int($theo_fp_rate_cuckoo * $N_TEST_PACKETS)}")
+        fp_hits_cuckoo_var_load=$(awk "BEGIN {print int($theo_fp_rate_cuckoo_var_load * $N_TEST_PACKETS)}")
+    fi
 
 # Print the results
     echo "========================================================="

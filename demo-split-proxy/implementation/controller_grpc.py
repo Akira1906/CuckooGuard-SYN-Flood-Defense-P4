@@ -79,14 +79,13 @@ class ThriftController():
         
         self.ss = SimpleSwitchThriftAPI(thrift_port=9090, json_path = json_path)
         
-        self.time_decay = time_decay
-        self.periodicRegisterReset()
+        self.periodicRegisterReset(time_decay)
         
-    def periodicRegisterReset(self):
+    def periodicRegisterReset(self, time_decay):
         delete_bloom_id = 1
 
         while(True):
-            sleep(self.time_decay/2)
+            sleep(time_decay/2)
             print(f"Reset Bloom Register: reg_bloom_{delete_bloom_id}_*")
             self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_1")
             self.ss.register_reset(f"reg_bloom_{delete_bloom_id}_2")

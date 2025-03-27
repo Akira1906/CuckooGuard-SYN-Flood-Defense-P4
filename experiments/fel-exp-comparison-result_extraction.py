@@ -14,6 +14,10 @@ def parse_timestamp(line):
 def process_varbloom_log_file(file_path):
     results = []
     earliest_timestamp = None  # Track the earliest timestamp
+    current_register = 0  # Start with register 0
+    curr_reg_bloom_0_size = 0
+    curr_reg_bloom_1_size = 0
+    last_line_was_reset = False
     with open(file_path, "r") as file:
         lines = file.readlines()
         for i in range(len(lines)):
@@ -23,6 +27,7 @@ def process_varbloom_log_file(file_path):
                 lines[i]
             )
             if match_reg_0:
+                last_line_was_reset = False
                 timestamp_0 = datetime.strptime(match_reg_0.group(1), "%H:%M:%S.%f")
                 if earliest_timestamp is None:
                     earliest_timestamp = timestamp_0  # Set the earliest timestamp
@@ -44,7 +49,36 @@ def process_varbloom_log_file(file_path):
                         
                         # Append the tuple (absolute timestamp, reg_bloom_0_size, reg_bloom_1_size)
                         results.append((abs_timestamp_0, reg_bloom_0_size, reg_bloom_1_size))
+                        curr_reg_bloom_0_size = reg_bloom_0_size
+                        curr_reg_bloom_1_size = reg_bloom_1_size
                         break
+
+            # Match bm_register_reset events
+            match_reset = re.search(
+                r"\[(\d{2}:\d{2}:\d{2}\.\d{3})\].*bm_register_reset", 
+                lines[i]
+            )
+            if match_reset:
+                if last_line_was_reset:
+                    timestamp_reset = datetime.strptime(match_reset.group(1), "%H:%M:%S.%f")
+                    if earliest_timestamp is None:
+                        earliest_timestamp = timestamp_reset  # Set the earliest timestamp
+                    
+                    # Convert timestamp to nanoseconds from the earliest timestamp
+                    abs_timestamp_reset = int((timestamp_reset - earliest_timestamp).total_seconds() * 1e9)
+                    
+                    # Simulate resetting the current register
+                    if current_register == 0 or current_register == 1:
+                        curr_reg_bloom_0_size = 0
+                    else:
+                        curr_reg_bloom_1_size = 0
+                        
+                    results.append((abs_timestamp_reset, curr_reg_bloom_0_size, curr_reg_bloom_1_size))  # Reset reg_bloom_0_size
+
+                else:
+                    last_line_was_reset = True
+                current_register = (current_register + 1) % 4
+
     return results
 
 # Function to process log files for cuckoo filter extraction
@@ -78,7 +112,7 @@ def process_cuckoo_log_file(file_path):
 
             # Match -1 case
             match_remove = re.search(
-                r"\[(\d{2}:\d{2}:\d{2}\.\d{3})\]*cuckoo_delete*", 
+                r"\[(\d{2}:\d{2}:\d{2}\.\d{3})\].*meta\.cuckoo_delete_success = 1", 
                 line
             )
             if match_remove:
@@ -116,32 +150,32 @@ def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Define relative paths to the log files
-    # relative_log_files = [
-    #     "results/filter_elements_varbloom_results.txt"
-    # ]
+    relative_log_files = [
+        "results/filter_elements_varbloom_results.txt"
+    ]
 
-    # # Convert relative paths to absolute paths
-    # varbloom_log_files = [os.path.join(base_dir, rel_path) for rel_path in relative_log_files]
-    # # Process varbloom results
-    # varbloom_results = []
-    # for log_file in varbloom_log_files:
-    #     varbloom_results.extend(process_varbloom_log_file(log_file))
+    # Convert relative paths to absolute paths
+    varbloom_log_files = [os.path.join(base_dir, rel_path) for rel_path in relative_log_files]
+    # Process varbloom results
+    varbloom_results = []
+    for log_file in varbloom_log_files:
+        varbloom_results.extend(process_varbloom_log_file(log_file))
     
-    # # Sort varbloom results by timestamp
-    # varbloom_results.sort(key=lambda x: x[0])
+    # Sort varbloom results by timestamp
+    varbloom_results.sort(key=lambda x: x[0])
     
-    # # Format varbloom results for JSON
-    # formatted_varbloom_results = [
-    #     {
-    #         "timestamp_ns": timestamp,  # Update key to reflect nanoseconds
-    #         "reg_bloom_0_size": reg_bloom_0_size,
-    #         "reg_bloom_1_size": reg_bloom_1_size
-    #     }
-    #     for timestamp, reg_bloom_0_size, reg_bloom_1_size in varbloom_results
-    # ]
-    # # print(formatted_varbloom_results)
-    # # Save varbloom results to JSON
-    # save_results_to_json(formatted_varbloom_results, "fel-varbloom_results.json")
+    # Format varbloom results for JSON
+    formatted_varbloom_results = [
+        {
+            "timestamp_ns": timestamp,  # Update key to reflect nanoseconds
+            "reg_bloom_0_size": reg_bloom_0_size,
+            "reg_bloom_1_size": reg_bloom_1_size
+        }
+        for timestamp, reg_bloom_0_size, reg_bloom_1_size in varbloom_results
+    ]
+    # print(formatted_varbloom_results)
+    # Save varbloom results to JSON
+    save_results_to_json(formatted_varbloom_results, "fel-varbloom_results.json")
 
     # Define relative paths to the cuckoo log files
     relative_cuckoo_log_files = [

@@ -191,7 +191,7 @@ class FPTest(Test):
             sleep(self.packet_processing_delay)
 
             # Step 2: send legitimate TCP packet through P4 check if it gets through Filter operation was successful
-            self.packet_processing_delay
+            # self.packet_processing_delay
             tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
             ack_pkt = (
                 Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /

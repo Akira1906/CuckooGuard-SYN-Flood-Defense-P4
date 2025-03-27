@@ -4,7 +4,7 @@
 
 AVAILABLE_MEMORY_BIT=84227
 N_BENIGN_CONNECTIONS=5000
-N_TEST_PACKETS=10000
+N_TEST_PACKETS=7000
 a=0.95
 
 b=4 # number of entries per bucket
@@ -91,19 +91,19 @@ FN_SUFFIX=cuckoo
 cuckoo_p4_debug_fn="logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log"
 
 
-# # 2. Run Bloom Filter with enabled time-decaying
-# FN_SUFFIX=varbloom
+# 2. Run Bloom Filter with enabled time-decaying
+FN_SUFFIX=varbloom
 
-# ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix $FN_SUFFIX \
-#         --fp_test $FP_TEST --test_name $TEST_NAME \
-#         --filter_size 84227 \
-#         --fingerprint_size $fingerprint_size \
-#         --n_buckets $hash_k \
-#         --n_benign_connections $n_constant_connections \
-#         --n_test_packets $N_TEST_PACKETS \
-#         --filter_time_decay 10 \
-#         --debug \
-#         > results/filter_elements_varbloom_results.txt 
+./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy" --fn_suffix $FN_SUFFIX \
+        --fp_test $FP_TEST --test_name $TEST_NAME \
+        --filter_size 84227 \
+        --fingerprint_size $fingerprint_size \
+        --n_buckets $hash_k \
+        --n_benign_connections $n_constant_connections \
+        --n_test_packets $N_TEST_PACKETS \
+        --filter_time_decay 10 \
+        --debug \
+        > results/filter_elements_varbloom_results.txt 
 
 
 python fel-exp-comparison-result_extraction.py

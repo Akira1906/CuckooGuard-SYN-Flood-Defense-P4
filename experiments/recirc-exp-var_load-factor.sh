@@ -57,20 +57,29 @@ save_experiment_json() {
 for load_factor in $(seq 0.3 0.05 0.95); do
     echo "Start experiment run with load factor: $load_factor"
 
-    n_preloaded_connections=$(awk "BEGIN {print int($n_fingerprints * $load_factor)}")
+    for i in {1..4}; do
+        echo "Iteration $i for load factor: $load_factor"
 
-    ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy-cuckoo" --fn_suffix cuckoo \
-            --fp_test ptf-measure-recirc-ds --test_name cuckoo_recirculation_test \
-            --filter_size 84227\
-            --fingerprint_size $fingerprint_size \
-            --n_buckets $n_buckets \
-            --n_benign_connections $n_preloaded_connections \
-            --n_test_packets $N_TEST_PACKETS \
-            --no_controller \
-            > results/recirc_cuckoo_results.txt
-    
-    packet_count=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/recirc_cuckoo_results.txt)
-    echo "packet_count: $packet_count"
-    # Save experiment results to JSON history
-    save_experiment_json
+        n_preloaded_connections=$(awk "BEGIN {print int($n_fingerprints * $load_factor)}")
+
+        ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy-cuckoo" --fn_suffix cuckoo \
+                --fp_test ptf-measure-recirc-ds --test_name cuckoo_recirculation_test \
+                --filter_size 84227\
+                --fingerprint_size $fingerprint_size \
+                --n_buckets $n_buckets \
+                --n_benign_connections $n_preloaded_connections \
+                --n_test_packets $N_TEST_PACKETS \
+                --no_controller \
+                > results/recirc_cuckoo_results.txt
+
+        packet_count=$(awk '/START RESULT/{flag=1;next}/END RESULT/{flag=0}flag' results/recirc_cuckoo_results.txt)
+        echo "packet_count: $packet_count"
+        # Save experiment results to JSON history
+        save_experiment_json
+    done
 done
+
+python recirc-exp-var_load_factor_visualize.py
+done
+
+python recirc-exp-var_load_factor_visualize.py

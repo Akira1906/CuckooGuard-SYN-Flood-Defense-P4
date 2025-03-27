@@ -3,8 +3,49 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import os
 
+def load_config(config_path):
+    if not os.path.exists(config_path):
+        print(f"Error: Configuration file '{config_path}' not found.")
+        return None
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
 def main():
-    json_file = os.path.join(os.path.dirname(__file__), "results/fel-varbloom_results.json")  # Construct absolute path
+    config_path = os.path.join(os.path.dirname(__file__), "figures/matplotlib_config.json")
+    config = load_config(config_path)
+    # print(config)
+    if config is None:
+        return
+
+    # Apply Matplotlib configuration
+    mpl_config = config.get("matplotlib_config", {})
+    figure_dimensions = config.get("figure_dimensions", {})
+    fig_width = figure_dimensions.get("width", 6)
+    fig_height = figure_dimensions.get("height", 3.2)
+    mpl.rcParams.update({
+        "figure.figsize": (fig_width, fig_height),
+        "font.size": mpl_config.get("font", {}).get("size", 9),
+        "font.family": mpl_config.get("font", {}).get("family", "sans-serif"),
+        "font.sans-serif": mpl_config.get("font", {}).get("sans-serif", ["DejaVu Sans"]),
+        "axes.grid": mpl_config.get("axes", {}).get("grid", True),
+        "axes.edgecolor": mpl_config.get("axes", {}).get("edgecolor", "#444444"),
+        "axes.linewidth": mpl_config.get("axes", {}).get("linewidth", 0.8),
+        "lines.linewidth": mpl_config.get("lines", {}).get("linewidth", 1.2),
+        "lines.markersize": 0,
+        "legend.frameon": mpl_config.get("legend", {}).get("frameon", False),
+        "legend.fontsize": mpl_config.get("legend", {}).get("fontsize", 8),
+        "xtick.direction": mpl_config.get("ticks", {}).get("xtick_direction", "in"),
+        "ytick.direction": mpl_config.get("ticks", {}).get("ytick_direction", "in"),
+        "pdf.fonttype": mpl_config.get("output", {}).get("pdf_fonttype", 42),
+        "svg.fonttype": mpl_config.get("output", {}).get("svg_fonttype", "none")
+    })
+
+    # Extract filter colors and graph names from config
+    filter_colors = config.get("filter_colors", {})
+    filter_styles = config.get("filter_styles", {})
+    graph_names = config.get("graph_names", {})
+
+    json_file = os.path.join(os.path.dirname(__file__), "results/fel-varbloom_results.json")
     if not os.path.exists(json_file):
         print(f"Error: File '{json_file}' not found.")
         return
@@ -15,13 +56,12 @@ def main():
     # Parse Bloom Filter data
     results = {'time_seconds': [], 'total_elements': []}
     for entry in data:
-        time_seconds = entry['timestamp_ns'] / 1e9  # Convert nanoseconds to seconds
-        total_elements = entry['reg_bloom_0_size'] + entry['reg_bloom_1_size']  # Sum of Bloom filter sizes
+        time_seconds = entry['timestamp_ns'] / 1e9
+        total_elements = entry['reg_bloom_0_size'] + entry['reg_bloom_1_size']
         results['time_seconds'].append(time_seconds)
         results['total_elements'].append(total_elements)
 
-    # Parse Cuckoo Filter data
-    cuckoo_file = os.path.join(os.path.dirname(__file__), "results/fel-cuckoo_results.json")  # New JSON file
+    cuckoo_file = os.path.join(os.path.dirname(__file__), "results/fel-cuckoo_results.json")
     if not os.path.exists(cuckoo_file):
         print(f"Error: File '{cuckoo_file}' not found.")
         return
@@ -31,57 +71,63 @@ def main():
 
     cuckoo_results = {'time_seconds': [], 'n_elements': []}
     for entry in cuckoo_data:
-        time_seconds = entry['timestamp_ns'] / 1e9  # Convert nanoseconds to seconds
+        time_seconds = entry['timestamp_ns'] / 1e9
         n_elements = entry['n_elements']
         cuckoo_results['time_seconds'].append(time_seconds)
         cuckoo_results['n_elements'].append(n_elements)
 
-    # === IEEE-style Plot Configuration ===
-    mpl.rcParams.update({
-        "figure.figsize": (6, 3.2),            # Inches: typical for IEEE 1-col or 2-col layout
-        "font.size": 9,                        # Slightly smaller than default
-        "font.family": "sans-serif",
-        "font.sans-serif": ["DejaVu Sans"],
-        "axes.grid": True,
-        "axes.edgecolor": "#444444",
-        "axes.linewidth": 0.8,
-        "lines.linewidth": 1.2,
-        "lines.markersize": 4,
-        "legend.frameon": False,
-        "legend.fontsize": 8,
-        "xtick.direction": "in",
-        "ytick.direction": "in",
-        "pdf.fonttype": 42,                    # Editable fonts in PDF
-        "svg.fonttype": "none"                 # Editable fonts in SVG
-    })
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
 
-    fig, ax = plt.subplots()
+    bloom_filters = ["varbloom"]
+    cuckoo_filters = ["cuckoo"]
 
-    # Plot Bloom Filter data
-    x = results['time_seconds']
-    y = results['total_elements']
-    if len(x) != len(y):
-        print(f"⚠️ Skipping Bloom Filter plot due to mismatched data lengths ({len(x)} vs {len(y)})")
-        return
-    ax.plot(x, y, label="Total Elements in Bloom Filter")  # Removed marker='o'
+    ordered_keys = bloom_filters + cuckoo_filters
+    for filter_type, (x, y) in sorted(
+        {"varbloom": (results['time_seconds'], results['total_elements']),
+         "cuckoo": (cuckoo_results['time_seconds'], cuckoo_results['n_elements'])}.items(),
+        key=lambda x: ordered_keys.index(x[0]) if x[0] in ordered_keys else len(ordered_keys)
+    ):
+        if len(x) != len(y):
+            print(f"⚠️ Skipping '{filter_type}' due to mismatched data lengths ({len(x)} vs {len(y)})")
+            continue
+        color = filter_colors.get(filter_type, "#000000")  # Default to black if not in dictionary
+        style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
+        name = graph_names.get(filter_type, filter_type)  # Use graph name or default to key
+        # ax.plot(x, y, label=f"{name}", color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
+        ax.step(x, y, label=f"{name}", color=color, where='post', linestyle=tuple(style["linestyle"]), marker=style["marker"])  # 'post' ensures the step remains at the previous value until the next change
+        
+        
+    ax.set_xlabel("Time (seconds)")
+    ax.set_ylabel("Connections Tracked in Filter")
+    
+    # Add vertical lines at 5, 35, and 40 seconds
+    for x in [5, 35, 40]:
+        ax.axvline(x=x, color='blue', linestyle='--', linewidth=0.6)
 
-    # Plot Cuckoo Filter data
-    x_cuckoo = cuckoo_results['time_seconds']
-    y_cuckoo = cuckoo_results['n_elements']
-    if len(x_cuckoo) != len(y_cuckoo):
-        print(f"⚠️ Skipping Cuckoo Filter plot due to mismatched data lengths ({len(x_cuckoo)} vs {len(y_cuckoo)})")
-        return
-    ax.plot(x_cuckoo, y_cuckoo, label="Total Elements in Cuckoo Filter")  # No markers
+    # Ensure x-axis starts at 0
+    ax.set_xlim(left=0)
 
-    ax.set_xlabel("Time (seconds)")  # Update x-axis label
-    ax.set_ylabel("Total Elements")  # Generalized y-axis label
-    ax.legend(loc="upper left", ncol=1)
-    ax.set_title("")  # Keep minimal for paper inclusion
+    if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
+        ax.legend(
+            loc=config["matplotlib_config"]["legend"]["loc"],
+            bbox_to_anchor=config["matplotlib_config"]["legend"]["bbox_to_anchor"],
+            ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
+            columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
+            handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
+        )
+    else:
+        ax.legend(
+            loc=config["matplotlib_config"]["legend"]["loc"],
+            ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
+            columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
+            handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
+        )
+    ax.set_title("")
 
     ax.tick_params(axis='y', which='both', labelsize=8)
     ax.set_ylim(bottom=0)
     fig.tight_layout()
-    output_file = "figures/fes-comparison.svg"
+    output_file = "figures/fel-comparison.svg"
     plt.savefig(output_file, format="svg")
     print(f"✅ Plot saved as '{output_file}'")
 

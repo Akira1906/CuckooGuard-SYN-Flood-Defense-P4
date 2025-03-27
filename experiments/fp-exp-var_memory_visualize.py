@@ -44,7 +44,36 @@ import os
 #     }
 #   },
 
-def main(json_file):
+def load_config(config_path):
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+def main(json_file, config_file):
+    config = load_config(config_file)
+    # print(config)
+    mpl_config = config["matplotlib_config"]
+    filter_colors = config["filter_colors"]
+    filter_styles = config.get("filter_styles", {})
+
+    # Apply matplotlib configuration
+    mpl.rcParams.update({
+        "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]),
+        "font.size": mpl_config["font"]["size"],
+        "font.family": mpl_config["font"]["family"],
+        "font.sans-serif": mpl_config["font"]["sans-serif"],
+        "axes.grid": mpl_config["axes"]["grid"],
+        "axes.edgecolor": mpl_config["axes"]["edgecolor"],
+        "axes.linewidth": mpl_config["axes"]["linewidth"],
+        "lines.linewidth": mpl_config["lines"]["linewidth"],
+        "lines.markersize": mpl_config["lines"]["markersize"],
+        "legend.frameon": mpl_config["legend"]["frameon"],
+        "legend.fontsize": mpl_config["legend"]["fontsize"],
+        "xtick.direction": mpl_config["ticks"]["xtick_direction"],
+        "ytick.direction": mpl_config["ticks"]["ytick_direction"],
+        "pdf.fonttype": mpl_config["output"]["pdf_fonttype"],
+        "svg.fonttype": mpl_config["output"]["svg_fonttype"]
+    })
+
     with open(json_file, 'r') as f:
         data = json.load(f)
 
@@ -65,36 +94,27 @@ def main(json_file):
                 results[key]['memory'].append(memory_bits)
                 results[key]['fp_rate'].append(fp_rate)
 
-    # === IEEE-style Plot Configuration ===
-    mpl.rcParams.update({
-        "figure.figsize": (6, 3.2),            # Inches: typical for IEEE 1-col or 2-col layout
-        "font.size": 9,                        # Slightly smaller than default
-        "font.family": "sans-serif",
-        "font.sans-serif": ["DejaVu Sans"],
-        "axes.grid": True,
-        "axes.edgecolor": "#444444",
-        "axes.linewidth": 0.8,
-        "lines.linewidth": 1.2,
-        "lines.markersize": 4,
-        "legend.frameon": False,
-        "legend.fontsize": 8,
-        "xtick.direction": "in",
-        "ytick.direction": "in",
-        "pdf.fonttype": 42,                    # Editable fonts in PDF
-        "svg.fonttype": "none"                 # Editable fonts in SVG
-    })
-
     fig, ax = plt.subplots()
 
-    for filter_type, values in results.items():
-        if filter_type in ['bloom_part_2', 'bloom_std', 'bloom_part_3']:
+    bloom_filters = ["bloom_part_3", "varbloom", "varbloom_time_decay"]
+    cuckoo_filters = ["cuckoo", "cuckoo_var_load"]
+
+    ordered_keys = bloom_filters + cuckoo_filters
+    for filter_type, values in sorted(
+        results.items(),
+        key=lambda x: ordered_keys.index(x[0]) if x[0] in ordered_keys else len(ordered_keys)
+    ):
+        if filter_type in ['bloom_part_2', 'bloom_std']:
             continue
         mem = values['memory']
         fpr = values['fp_rate']
         if len(mem) != len(fpr):
             print(f"⚠️ Skipping '{filter_type}' due to mismatched data lengths ({len(mem)} vs {len(fpr)})")
             continue
-        ax.plot(mem, fpr, marker='o', label=filter_type)
+        color = filter_colors.get(filter_type, "#000000")  # Default to black if filter type not in dict
+        style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
+        name = config.get("graph_names", {}).get(filter_type, filter_type)  # Use graph name or default to key
+        ax.plot(mem, fpr, label=name, color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
@@ -103,7 +123,24 @@ def main(json_file):
 
     ax.set_xlabel("Available Memory (bits)")
     ax.set_ylabel("False Positive Rate")
-    ax.legend(loc="upper right", ncol=1)
+    ax.set_xlim(left=min(min(values['memory']) for values in results.values() if values['memory']),
+                right=max(max(values['memory']) for values in results.values() if values['memory']))  # Adjust x-axis limits
+
+    if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
+        ax.legend(
+            loc=config["matplotlib_config"]["legend"]["loc"],
+            bbox_to_anchor=config["matplotlib_config"]["legend"]["bbox_to_anchor"],
+            ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
+            columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
+            handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
+        )
+    else:
+        ax.legend(
+            loc=config["matplotlib_config"]["legend"]["loc"],
+            ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
+            columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
+            handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
+        )
     ax.set_ylim(bottom=0.001)  # Adjust bottom limit for log scale
     ax.set_title("")  # Keep minimal for paper inclusion
 
@@ -114,7 +151,8 @@ def main(json_file):
 
 if __name__ == "__main__":
     json_file_name = "results/fp-var_memory.json"  # Hardcoded relative path to the JSON file
+    config_file_name = "figures/matplotlib_config.json"  # Path to the configuration file
     json_path = os.path.abspath(json_file_name)
+    config_path = os.path.abspath(config_file_name)
 
-
-    main(json_path)
+    main(json_path, config_path)

@@ -87,14 +87,14 @@ class RecircTest(Test):
         self.ebpf_iface = 4
 
         n_benign_connections = int(tu.test_param_get("n_benign_connections"))
-        n_test_packets = int(tu.test_param_get("n_test_packets"))
+        self.n_test_packets = int(tu.test_param_get("n_test_packets"))
 
         self.packet_processing_delay = 0.001
-        self.connection_iat = 0.001
+        self.connection_iat = 0.005
 
         # Add and remove a new element repeatedly
         new_connections_set = set()
-        while len(new_connections_set) < n_test_packets:
+        while len(new_connections_set) < self.n_test_packets:
             test_ip = f"10.0.{random.randint(0, 255)}.{random.randint(1, 254)}"
             test_port = random.randint(1024, 65535)
             new_connections_set.add((test_ip, test_port))
@@ -114,20 +114,20 @@ class RecircTest(Test):
             connections_ip_port.add((ip, port))
         return connections_ip_port
 
-    async def simulate_connections(self, new_connections_set, delay=1):
-        tasks = []
-        for test_ip, test_port in new_connections_set:
-            logging.debug(f"Scheduling connection simulation for {test_ip}:{test_port}")
-            tasks.append(self.simulate_connection(test_ip, test_port, delay))
-            await asyncio.sleep(self.connection_iat)  # Add delay between scheduling tasks
-        logging.debug("Awaiting all connection simulation tasks")
-        await asyncio.gather(*tasks)
-
-    async def simulate_connection(self, test_ip, test_port, delay):
+    async def simulate_connections(self, new_connections_set, delay=5):
+        for i, (test_ip, test_port) in enumerate(new_connections_set):
+            time_offset = 1 + (i * self.connection_iat)
+            logging.debug(f"Scheduling connection simulation for {test_ip}:{test_port} at time offset {time_offset}")
+            asyncio.create_task(self.simulate_connection(test_ip, test_port, delay, time_offset))
+            # await asyncio.sleep(self.connection_iat)  # Add delay between starting each connection
+        await asyncio.sleep((self.connection_iat * self.n_test_packets) + 15)
+    async def simulate_connection(self, test_ip, test_port, delay, start_offset):
+        await asyncio.sleep(start_offset)  # Ensure the connection starts at the correct time
         logging.debug(f"Simulating connection insertion for {test_ip}:{test_port}")
         await self.filter_connection_insertion(test_ip, test_port)
-        logging.debug(f"Waiting for {delay} seconds before removing connection {test_ip}:{test_port}")
-        await asyncio.sleep(delay)  # Use asyncio.sleep for proper async behavior
+        logging.debug(f"Waiting for {delay} seconds before sending normal packet and removal for {test_ip}:{test_port}")
+        await asyncio.sleep(delay)  # Wait for the designated delay
+        await self.filter_send_normal_packet(test_ip, test_port)
         logging.debug(f"Simulating connection removal for {test_ip}:{test_port}")
         await self.remove_connection_from_filter(test_ip, test_port)
 
@@ -142,7 +142,7 @@ class RecircTest(Test):
             )
             logging.debug(f"Sending removal packet for {client_ip}:{client_port}")
             tu.send_packet(self, self.ebpf_iface, remove_pkt)
-            await asyncio.sleep(self.packet_processing_delay)  # Add delay after sending the packet
+            # await asyncio.sleep(self.packet_processing_delay)  # Add delay after sending the packet
             logging.debug(f"Removal packet sent for {client_ip}:{client_port}")
 
     async def filter_connection_insertion(self, client_ip, client_port):
@@ -155,5 +155,16 @@ class RecircTest(Test):
             )
             logging.debug(f"Sending insertion packet for {client_ip}:{client_port}")
             tu.send_packet(self, self.ebpf_iface, ack_pkt)
-            await asyncio.sleep(self.packet_processing_delay)  # Add delay after sending the packet
+            # await asyncio.sleep(self.packet_processing_delay)  # Add delay after sending the packet
             logging.debug(f"Insertion packet sent for {client_ip}:{client_port}")
+    
+    async def filter_send_normal_packet(self, client_ip, client_port):
+        async with self.packet_lock:  # Ensure only one coroutine sends a packet at a time
+            tcp_load = b"GET /index.html HTTP/1.1\r\nHost: 10.0.1.3\r\n\r\n"
+            ack_pkt = (
+                Ether(dst=self.switch_client_mac, src=self.client_mac, type=0x0800) /
+                IP(src=client_ip, dst=self.server_ip, ttl=64, proto=6, id=1, flags=0) /
+                TCP(sport=client_port, dport=self.server_port, flags="PA", seq=1, ack=32454) /
+                Raw(load=tcp_load)
+            )
+            tu.send_packet(self, self.client_iface, ack_pkt)
