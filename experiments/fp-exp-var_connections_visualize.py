@@ -53,6 +53,7 @@ def load_config(config_file):
 def main(json_file):
     config_file = "figures/matplotlib_config.json"  # Path to the configuration file
     config = load_config(config_file)
+    mpl_config = config.get("matplotlib_config")
 
     with open(json_file, 'r') as f:
         data = json.load(f)
@@ -124,7 +125,7 @@ def main(json_file):
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
     ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.4f}%"))
-    ax.tick_params(axis='y', which='both', labelsize=8)
+    ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
     ax.set_xlabel("Number of Connections")  # Update x-axis label
     ax.set_ylabel("False Positive Rate")
     

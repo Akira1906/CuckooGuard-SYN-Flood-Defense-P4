@@ -118,8 +118,8 @@ def main(json_file, config_file):
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
-    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.4f}%"))
-    ax.tick_params(axis='y', which='both', labelsize=8)
+    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.3f}%"))
+    ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
 
     ax.set_xlabel("Available Memory (bits)")
     ax.set_ylabel("False Positive Rate")
@@ -129,10 +129,10 @@ def main(json_file, config_file):
     if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
         ax.legend(
             loc=config["matplotlib_config"]["legend"]["loc"],
-            bbox_to_anchor=config["matplotlib_config"]["legend"]["bbox_to_anchor"],
+            bbox_to_anchor=mpl_config["legend"]["bbox_to_anchor"],
             ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
-            columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
-            handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
+            columnspacing=mpl_config["legend"].get("column_spacing", 0.5),
+            handletextpad=mpl_config["legend"].get("handletextpad", 0.3)
         )
     else:
         ax.legend(

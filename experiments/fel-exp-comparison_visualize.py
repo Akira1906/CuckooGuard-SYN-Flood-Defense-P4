@@ -110,7 +110,10 @@ def main():
     if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
         ax.legend(
             loc=config["matplotlib_config"]["legend"]["loc"],
-            bbox_to_anchor=config["matplotlib_config"]["legend"]["bbox_to_anchor"],
+            bbox_to_anchor=(
+                config["matplotlib_config"]["legend"]["bbox_to_anchor"][0],  # Reduce horizontal distance
+                config["matplotlib_config"]["legend"]["bbox_to_anchor"][1] - 0.2   # Reduce vertical distance
+            ),
             ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
             columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
             handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
@@ -124,7 +127,7 @@ def main():
         )
     ax.set_title("")
 
-    ax.tick_params(axis='y', which='both', labelsize=8)
+    ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
     ax.set_ylim(bottom=0)
     fig.tight_layout()
     output_file = "figures/fel-comparison.svg"

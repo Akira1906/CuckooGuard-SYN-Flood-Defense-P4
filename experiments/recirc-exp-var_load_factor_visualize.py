@@ -11,6 +11,7 @@ def load_config(config_file):
 
 def main(json_file, config_file):
     config = load_config(config_file)
+    mpl_config = config.get("matplotlib_config")
 
     with open(json_file, 'r') as f:
         data = json.load(f)
@@ -74,10 +75,14 @@ def main(json_file, config_file):
     ax.set_yscale("log")
     ax.set_xlabel("Load Factor (α)")  # Update x-axis label
     ax.set_ylabel("Recirculation Overhead")  # Update y-axis label
+    ax.set_xlim(left=min(results['load_factor']), right=max(results['load_factor']))
+    
     if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
         ax.legend(
             loc=config["matplotlib_config"]["legend"]["loc"],
-            bbox_to_anchor=config["matplotlib_config"]["legend"]["bbox_to_anchor"],
+            bbox_to_anchor=(
+                config["matplotlib_config"]["legend"]["bbox_to_anchor"][0],
+                (config["matplotlib_config"]["legend"]["bbox_to_anchor"][1] - 0.2)),
             ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
             columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
             handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
@@ -93,7 +98,7 @@ def main(json_file, config_file):
 
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
     ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.3f}%"))
-    ax.tick_params(axis='y', which='both', labelsize=8)
+    ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
     ax.set_ylim(bottom=0.1)
     fig.tight_layout()
     output_file = "figures/recirc-var_load_factor.svg"
