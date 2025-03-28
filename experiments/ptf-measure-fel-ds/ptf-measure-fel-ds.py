@@ -89,8 +89,8 @@ class RecircTest(Test):
         n_benign_connections = int(tu.test_param_get("n_benign_connections"))
         self.n_test_packets = int(tu.test_param_get("n_test_packets"))
 
-        self.packet_processing_delay = 0.001
-        self.connection_iat = 0.005
+        # self.packet_processing_delay = 0.001
+        self.connection_iat = 0.005 # 200 new connections per second
 
         # Add and remove a new element repeatedly
         new_connections_set = set()
@@ -127,6 +127,7 @@ class RecircTest(Test):
         await self.filter_connection_insertion(test_ip, test_port)
         logging.debug(f"Waiting for {delay} seconds before sending normal packet and removal for {test_ip}:{test_port}")
         await asyncio.sleep(delay)  # Wait for the designated delay
+        logging.debug(f"Sending normal packet for {test_ip}:{test_port}")
         await self.filter_send_normal_packet(test_ip, test_port)
         logging.debug(f"Simulating connection removal for {test_ip}:{test_port}")
         await self.remove_connection_from_filter(test_ip, test_port)

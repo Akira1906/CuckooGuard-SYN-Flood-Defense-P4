@@ -75,20 +75,17 @@ FP_TEST=ptf-measure-fel-ds
 n_constant_connections=$(awk "BEGIN {print($N_BENIGN_CONNECTIONS - 3000)}")
 
 # 1. Run with Cuckoo Filter
-FN_SUFFIX=cuckoo
-./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy-cuckoo" --fn_suffix $FN_SUFFIX \
-        --fp_test $FP_TEST --test_name $TEST_NAME \
-        --filter_size 84227 \
-        --fingerprint_size $fingerprint_size \
-        --n_buckets $n_buckets \
-        --n_benign_connections $n_constant_connections \
-        --n_test_packets $N_TEST_PACKETS \
-        --filter_time_decay 10 \
-        --debug \
-        > results/filter_elements_cuckoo_results.txt
-
-
-cuckoo_p4_debug_fn="logs/$TEST_NAME-split-proxy-$FN_SUFFIX-log"
+# FN_SUFFIX=cuckoo
+# ./analyze-split-proxy-ds.sh --app_path "../demo-split-proxy-cuckoo" --fn_suffix $FN_SUFFIX \
+#         --fp_test $FP_TEST --test_name $TEST_NAME \
+#         --filter_size 84227 \
+#         --fingerprint_size $fingerprint_size \
+#         --n_buckets $n_buckets \
+#         --n_benign_connections $n_constant_connections \
+#         --n_test_packets $N_TEST_PACKETS \
+#         --filter_time_decay 10 \
+#         --debug \
+#         > results/filter_elements_cuckoo_results.txt
 
 
 # 2. Run Bloom Filter with enabled time-decaying

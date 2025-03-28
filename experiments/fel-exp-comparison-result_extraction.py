@@ -28,30 +28,35 @@ def process_varbloom_log_file(file_path):
             )
             if match_reg_0:
                 last_line_was_reset = False
-                timestamp_0 = datetime.strptime(match_reg_0.group(1), "%H:%M:%S.%f")
+                timestamp = datetime.strptime(match_reg_0.group(1), "%H:%M:%S.%f")
                 if earliest_timestamp is None:
-                    earliest_timestamp = timestamp_0  # Set the earliest timestamp
+                    earliest_timestamp = timestamp  # Set the earliest timestamp
                 reg_bloom_0_size = int(match_reg_0.group(2))
                 
-                # Look for the second register update in the next few lines
-                for j in range(i + 1, min(i + 6, len(lines))):
-                    match_reg_1 = re.search(
-                        r"\[(\d{2}:\d{2}:\d{2}\.\d{3})\].*Wrote register 'SwitchIngress\.reg_bloom_1_size'.*value (\d+)", 
-                        lines[j]
-                    )
-                    if match_reg_1:
-                        timestamp_1 = datetime.strptime(match_reg_1.group(1), "%H:%M:%S.%f")
-                        reg_bloom_1_size = int(match_reg_1.group(2))
-                        
-                        # Convert timestamps to nanoseconds from the earliest timestamp
-                        abs_timestamp_0 = int((timestamp_0 - earliest_timestamp).total_seconds() * 1e9)
-                        abs_timestamp_1 = int((timestamp_1 - earliest_timestamp).total_seconds() * 1e9)
-                        
-                        # Append the tuple (absolute timestamp, reg_bloom_0_size, reg_bloom_1_size)
-                        results.append((abs_timestamp_0, reg_bloom_0_size, reg_bloom_1_size))
-                        curr_reg_bloom_0_size = reg_bloom_0_size
-                        curr_reg_bloom_1_size = reg_bloom_1_size
-                        break
+                abs_timestamp = int((timestamp - earliest_timestamp).total_seconds() * 1e9)
+                
+                # Append the tuple (absolute timestamp, reg_bloom_0_size, reg_bloom_1_size)
+                results.append((abs_timestamp, reg_bloom_0_size, curr_reg_bloom_1_size))
+                curr_reg_bloom_0_size = reg_bloom_0_size
+                
+            match_reg_1 = re.search(
+                r"\[(\d{2}:\d{2}:\d{2}\.\d{3})\].*Wrote register 'SwitchIngress\.reg_bloom_1_size'.*value (\d+)", 
+                lines[i]
+            )
+            if match_reg_1:
+                last_line_was_reset = False
+                timestamp = datetime.strptime(match_reg_1.group(1), "%H:%M:%S.%f")
+                if earliest_timestamp is None:
+                    earliest_timestamp = timestamp 
+                reg_bloom_1_size = int(match_reg_1.group(2))
+                
+                # Convert timestamps to nanoseconds from the earliest timestamp
+                # abs_timestamp_0 = int((timestamp_0 - earliest_timestamp).total_seconds() * 1e9)
+                abs_timestamp = int((timestamp - earliest_timestamp).total_seconds() * 1e9)
+                
+                # Append the tuple (absolute timestamp, reg_bloom_0_size, reg_bloom_1_size)
+                results.append((abs_timestamp, curr_reg_bloom_0_size, reg_bloom_1_size))
+                curr_reg_bloom_1_size = reg_bloom_1_size
 
             # Match bm_register_reset events
             match_reset = re.search(

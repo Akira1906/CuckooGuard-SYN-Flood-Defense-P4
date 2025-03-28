@@ -1,5 +1,5 @@
 
-for memory in $(seq 50000 1000 100000); do
+for memory in $(seq 45000 1000 80000); do
     echo "Start experiment run with $memory bits available memory"
     ./compare-fp-rate.sh \
         --n_benign_connections 5000 \

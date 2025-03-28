@@ -117,6 +117,8 @@ struct metadata_t {
     
     // Bloom Filter
     bit<1> bloom_read;
+    bit<1> bloom_read_0;
+    bit<1> bloom_read_1;
     // new introduced metadata
     bit<32> bloom_hash;
     bit<32> bloom_hash_1;
@@ -305,14 +307,21 @@ control SwitchIngress(
     register<bit<32>>(1) reg_bloom_0_size;
     register<bit<32>>(1) reg_bloom_1_size;
 
-    action increment_bloom_counters(){
-       reg_bloom_0_size.read(meta.bloom_size, 0);
-       meta.bloom_size = meta.bloom_size + 1;
-       reg_bloom_0_size.write(0, (bit<32>) meta.bloom_size);
+    action increment_bloom_counter_0(){
+        reg_bloom_0_size.read(meta.bloom_size, 0);
+        meta.bloom_size = meta.bloom_size + 1;
+        reg_bloom_0_size.write(0, (bit<32>) meta.bloom_size);
+    }
 
-       reg_bloom_1_size.read(meta.bloom_size, 0);
-       meta.bloom_size = meta.bloom_size + 1;
-       reg_bloom_1_size.write(0, (bit<32>) meta.bloom_size);
+    action increment_bloom_counter_1(){
+        reg_bloom_1_size.read(meta.bloom_size, 0);
+        meta.bloom_size = meta.bloom_size + 1;
+        reg_bloom_1_size.write(0, (bit<32>) meta.bloom_size);
+    }
+
+    action increment_bloom_counters(){
+       increment_bloom_counter_0();
+       increment_bloom_counter_1();
     }
 
     action calc_bloom_hash_1(){
@@ -733,12 +742,16 @@ control SwitchIngress(
 
     action read_sync_bloom(){
         reg_bloom_0_1.read(meta.bloom_read, meta.bloom_hash);
-        if (meta.bloom_read == 0) {
-            reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
-            // either write 0 in it again or write 1
-            reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) meta.bloom_read);
-        } else {
-            reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) meta.bloom_read);
+        meta.bloom_read_0 = meta.bloom_read & meta.bloom_read_0;
+
+        reg_bloom_1_1.read(meta.bloom_read, meta.bloom_hash);
+        meta.bloom_read_1 = meta.bloom_read & meta.bloom_read_1;
+
+        meta.bloom_read = meta.bloom_read_0 | meta.bloom_read_1;
+
+        if(meta.bloom_read == 1){
+            reg_bloom_0_1.write(meta.bloom_hash, (bit<1>) 1);
+            reg_bloom_1_1.write(meta.bloom_hash, (bit<1>) 1);
         }
     }
 
@@ -1028,11 +1041,9 @@ control SwitchIngress(
             timedelta_step3_read();
         }
 
-        // Check if Bloom Filter time-decaying mechanism has to run
-
         // Bloom Filter set and get
         
-        if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
+        if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1 && hdr.tcp.flag_urg==0 && hdr.tcp.flag_ack==0){
             increment_bloom_counters();
             if (N_HASH_FUNCTIONS >= 1) {
                 set_bloom_1_a();
@@ -1079,6 +1090,8 @@ control SwitchIngress(
             meta.bloom_read_passed=0;
         }else{
             if (N_HASH_FUNCTIONS >= 1) {
+                meta.bloom_read_0 = 1;
+                meta.bloom_read_1 = 1;
                 get_bloom_1_a();
                 if (meta.bloom_read == 1 && N_HASH_FUNCTIONS >= 2) {
                     get_bloom_2_a();
@@ -1121,8 +1134,14 @@ control SwitchIngress(
                 }
             }
             
-            if(meta.bloom_read==1){
-                meta.bloom_read_passed=1;
+            if(meta.bloom_read == 1){
+                meta.bloom_read_passed = 1;
+                if(meta.bloom_read_0 == 0){
+                    increment_bloom_counter_0();
+                }
+                if(meta.bloom_read_1 == 0){
+                    increment_bloom_counter_1();
+                }
             }else{
                 meta.bloom_read_passed=0;
             }

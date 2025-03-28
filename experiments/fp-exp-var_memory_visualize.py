@@ -114,7 +114,10 @@ def main(json_file, config_file):
         color = filter_colors.get(filter_type, "#000000")  # Default to black if filter type not in dict
         style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
         name = config.get("graph_names", {}).get(filter_type, filter_type)  # Use graph name or default to key
-        ax.plot(mem, fpr, label=name, color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
+        if 'bloom' in filter_type:
+            ax.plot(mem, fpr, label=name, color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
+        else:
+            ax.step(mem, fpr, label=f"{name}", color=color, where='post', linestyle=tuple(style["linestyle"]), marker=style["marker"])
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
