@@ -21,7 +21,7 @@ def main():
     mpl_config = config.get("matplotlib_config", {})
     figure_dimensions = config.get("figure_dimensions", {})
     fig_width = figure_dimensions.get("width", 6)
-    fig_height = figure_dimensions.get("height", 3.2)
+    fig_height = figure_dimensions.get("height", 3.2) - 0.3
     mpl.rcParams.update({
         "figure.figsize": (fig_width, fig_height),
         "font.size": mpl_config.get("font", {}).get("size", 9),
@@ -98,7 +98,7 @@ def main():
         
         
     ax.set_xlabel("Time (seconds)")
-    ax.set_ylabel("Connections Tracked in Filter")
+    ax.set_ylabel("Total Filter Occupancy")
     
     # Add vertical lines at 5, 35, and 40 seconds
     for x in [5, 35, 40]:
@@ -112,7 +112,7 @@ def main():
             loc=config["matplotlib_config"]["legend"]["loc"],
             bbox_to_anchor=(
                 config["matplotlib_config"]["legend"]["bbox_to_anchor"][0],  # Reduce horizontal distance
-                config["matplotlib_config"]["legend"]["bbox_to_anchor"][1] - 0.2   # Reduce vertical distance
+                config["matplotlib_config"]["legend"]["bbox_to_anchor"][1] - 0.1   # Reduce vertical distance
             ),
             ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
             columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
@@ -131,7 +131,7 @@ def main():
     ax.set_ylim(bottom=0)
     fig.tight_layout()
     output_file = "figures/fel-comparison.svg"
-    plt.savefig(output_file, format="svg")
+    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

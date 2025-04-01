@@ -67,7 +67,7 @@ def main(json_file, config_file):
         results.items(),
         key=lambda x: ordered_keys.index(x[0]) if x[0] in ordered_keys else len(ordered_keys)
     ):
-        if filter_type in ["bloom_part_2", "bloom_std"]:
+        if filter_type in ["bloom_part_2", "bloom_std", "bloom_part_3"]:
             continue
         load_factors = values['load_factor']
         fpr = values['fp_rate']
@@ -77,17 +77,32 @@ def main(json_file, config_file):
         color = filter_colors.get(filter_type, "#7f7f7f")  # Default to gray if not in dictionary
         style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
         name = config.get("graph_names", {}).get(filter_type, filter_type)  # Use graph name or default to key
-        if filter_type == "cuckoo_var_load": name = "Cuckoo Filter (var. LF)"
+        if filter_type == "cuckoo_var_load": name = "Cuckoo Filter (var. α)"
         ax.plot(load_factors, fpr, label=name, color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
     ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.2f}%"))
     ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
-    ax.set_xlabel("Maximum Load Factor")  # Update x-axis label
+    ax.set_xlabel("Maximum Load Factor (Cuckoo Filter)")  # Update x-axis label
     ax.set_ylabel("False Positive Rate")
     ax.set_xlim(left=min(min(values['load_factor']) for values in results.values() if values['load_factor']),
                 right=max(max(values['load_factor']) for values in results.values() if values['load_factor']))
+    
+    # Highlight x=0.85
+    highlight_x = 0.85
+    if highlight_x in load_factors:
+        highlight_y = fpr[load_factors.index(highlight_x)]
+        # Vertical line stopping at the graph
+        ax.plot([highlight_x, highlight_x], [0.01, highlight_y], color="blue", linestyle="--", linewidth=0.6)
+        # Horizontal line extending left
+        ax.plot([0.1, highlight_x], [highlight_y, highlight_y], color="blue", linestyle="--", linewidth=0.6)
+        # ax.annotate(
+        #     f"({highlight_y:.3f}%)",
+        #     xy=(highlight_x, highlight_y),
+        #     xytext=(highlight_x - 0.2, highlight_y + 0.01),
+        #     fontsize=mpl_config["font"]["size"]
+        # )
     
     if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
         ax.legend(
@@ -109,7 +124,7 @@ def main(json_file, config_file):
 
     fig.tight_layout()
     output_file = "figures/fp-var_cf_load_factor.svg"
-    plt.savefig(output_file, format="svg")
+    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

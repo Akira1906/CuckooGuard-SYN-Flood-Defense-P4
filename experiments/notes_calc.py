@@ -1,4 +1,4 @@
-AVAILABLE_MEMORY_BIT=85275
+AVAILABLE_MEMORY_BIT=8000000000000
 N_BENIGN_CONNECTIONS=5000
 
 m = AVAILABLE_MEMORY_BIT
@@ -26,7 +26,7 @@ print(best)
 # print(best)
 
 # Find best k for standard Bloom Filter approximation
-for m in range(10000, 110000, 10000):
+for m in [8000000000000]:
     m = AVAILABLE_MEMORY_BIT
     n = N_BENIGN_CONNECTIONS
     best = (float('inf'), float('inf')) # FP, k

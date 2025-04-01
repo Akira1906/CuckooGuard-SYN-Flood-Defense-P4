@@ -14,7 +14,7 @@ def parse_timestamp(line):
 def process_varbloom_log_file(file_path):
     results = []
     earliest_timestamp = None  # Track the earliest timestamp
-    current_register = 0  # Start with register 0
+    current_register = 2  # Start with register 0
     curr_reg_bloom_0_size = 0
     curr_reg_bloom_1_size = 0
     last_line_was_reset = False

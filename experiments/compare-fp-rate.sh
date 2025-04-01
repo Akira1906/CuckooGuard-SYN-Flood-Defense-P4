@@ -1,19 +1,19 @@
 #!/bin/bash
 
 # Global experiment parameters
-    AVAILABLE_MEMORY_BIT=84227
-    N_BENIGN_CONNECTIONS=5000
-    N_TEST_PACKETS=40000
+    AVAILABLE_MEMORY_BIT=6291456
+    N_BENIGN_CONNECTIONS=579000
+    N_TEST_PACKETS=100000
     ALWAYS_RETEST=true
     CUCKOO_VAR_LOAD=0.85
     FAKE=false
 
-    run_bloom_part1=true
-    run_bloom_part2=true
-    run_bloom_part3=true
-    run_varbloom=true
-    run_varbloom_time_decay=true
-    run_cuckoo=true
+    run_bloom_part1=false
+    run_bloom_part2=false
+    run_bloom_part3=false
+    run_varbloom=false
+    run_varbloom_time_decay=false
+    run_cuckoo=false
     run_cuckoo_var_load=true
     
 
@@ -492,7 +492,7 @@
     n_fingerprints=$(awk "BEGIN {print int($n_buckets * $b)}")
 
     # Compute theoretical perfect amount of memory to achieve a=0.95
-    ideal_fingerprint_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / $min_needed_empty_spaces)}")
+    # ideal_fingerprint_size=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / $min_needed_empty_spaces)}")
     ideal_memory_bit=$(awk "BEGIN {print int(($n / $a) * $fingerprint_size)}")
 
     echo "----------------------------------"
@@ -505,7 +505,7 @@
     echo "  - Number of Buckets: $n_buckets"
     echo "  - Total Number of Fingerprints: $n_fingerprints"
     echo "  - Theoretical Ideal Memory: $ideal_memory_bit bits"
-    echo "  - Theoretical Ideal Fingerprint Size: $ideal_fingerprint_size bits"
+    # echo "  - Theoretical Ideal Fingerprint Size: $ideal_fingerprint_size bits"
     echo "----------------------------------"
 
     should_rerun_experiment "cuckoo"
@@ -552,6 +552,10 @@
     # Compute total number of fingerprints
     n_fingerprints_var=$(awk "BEGIN {print int($n_buckets_var * $b)}")
 
+    # Compute theoretical perfect amount of memory to achieve a=0.95
+    # ideal_fingerprint_size_var=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / $min_needed_empty_spaces_var)}")
+    ideal_memory_bit_var=$(awk "BEGIN {print int(($n / $a_var) * $fingerprint_size)}")
+
     echo "----------------------------------"
     echo "Computed Cuckoo Filter Var Load Factor Parameters:"
     echo "  - Available Memory: $AVAILABLE_MEMORY_BIT bits"
@@ -561,6 +565,7 @@
     echo "  - Fingerprint Size: $fingerprint_size_var bits"
     echo "  - Number of Buckets: $n_buckets_var"
     echo "  - Total Number of Fingerprints: $n_fingerprints_var"
+    echo "  - Theoretical Ideal Memory: $ideal_memory_bit_var bits"
     echo "----------------------------------"
 
     should_rerun_experiment "cuckoo_var_load"
@@ -655,6 +660,7 @@
 
     # Cuckoo Filter Var Load Factor
     real_a_var=$(awk "BEGIN {print ($N_BENIGN_CONNECTIONS / $n_fingerprints_var)}")
+    echo $real_a_var
     theo_fp_rate_cuckoo_var_load=$(awk -v b="$b" -v a="$real_a_var" '
     BEGIN {
         theo_fp_rate = 1/(2^((b * a) - 3))

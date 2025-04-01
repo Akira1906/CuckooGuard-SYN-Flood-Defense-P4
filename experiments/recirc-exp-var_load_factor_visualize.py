@@ -70,7 +70,24 @@ def main(json_file, config_file):
         color = filter_colors.get(filter_type, "#000000")  # Default to black if not in dictionary
         name = graph_names.get(filter_type, filter_type)  # Use graph name or default to key
         style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
-        ax.plot(x, y, label="Cuckoo Filter (var. LF)", color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
+        ax.plot(x, y, label="Cuckoo Filter (var. α)", color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
+
+        # Highlight x=0.85
+        highlight_x = 0.85
+        if highlight_x in x:
+            highlight_y = y[x.index(highlight_x)]
+            # Vertical line stopping at the graph
+            ax.plot([highlight_x, highlight_x], [0.1, highlight_y], color="blue", linestyle="--", linewidth=0.6)
+            # Horizontal line extending left
+            ax.plot([0.1, highlight_x], [highlight_y, highlight_y], color="blue", linestyle="--", linewidth=0.6)
+            # ax.axhline(y=highlight_y, xmax=highlight_x / max(x), color="blue", linestyle="--", linewidth=0.6)
+            ax.annotate(
+                f"({highlight_y:.2f}%)",
+                xy=(highlight_x, highlight_y),
+                xytext=(highlight_x - 0.2, highlight_y + 50),
+                # arrowprops=dict(arrowstyle="->", color="blue"),
+                fontsize=mpl_config["font"]["size"]
+            )
 
     ax.set_yscale("log")
     ax.set_xlabel("Load Factor (α)")  # Update x-axis label
@@ -82,7 +99,7 @@ def main(json_file, config_file):
             loc=config["matplotlib_config"]["legend"]["loc"],
             bbox_to_anchor=(
                 config["matplotlib_config"]["legend"]["bbox_to_anchor"][0],
-                (config["matplotlib_config"]["legend"]["bbox_to_anchor"][1] - 0.2)),
+                (config["matplotlib_config"]["legend"]["bbox_to_anchor"][1])), # - 0.2
             ncol=config["matplotlib_config"]["legend"].get("ncol", 1),
             columnspacing=config["matplotlib_config"]["legend"].get("column_spacing", 0.5),
             handletextpad=config["matplotlib_config"]["legend"].get("handletextpad", 0.3)
@@ -97,12 +114,12 @@ def main(json_file, config_file):
     ax.set_title("")  # Keep minimal for paper inclusion
 
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
-    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.3f}%"))
+    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.1f}%"))
     ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
     ax.set_ylim(bottom=0.1)
     fig.tight_layout()
     output_file = "figures/recirc-var_load_factor.svg"
-    plt.savefig(output_file, format="svg")
+    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

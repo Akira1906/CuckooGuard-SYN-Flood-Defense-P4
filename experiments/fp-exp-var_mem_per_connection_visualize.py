@@ -57,7 +57,7 @@ def main(json_file, config_file):
 
     # Apply matplotlib configuration
     mpl.rcParams.update({
-        "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]),
+        "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]+0.5),
         "font.size": mpl_config["font"]["size"],
         "font.family": mpl_config["font"]["family"],
         "font.sans-serif": mpl_config["font"]["sans-serif"],
@@ -81,6 +81,7 @@ def main(json_file, config_file):
 
     for entry in data:
         memory_bits = entry['available_memory_bit']
+        n_connections = entry['n_benign_connections']
         n_test = entry['n_test_packets']
 
         for key, value in entry.items():
@@ -89,9 +90,10 @@ def main(json_file, config_file):
                 fp_rate = fp_hits / n_test * 100
 
                 if key not in results:
-                    results[key] = {'memory': [], 'fp_rate': []}
+                    results[key] = {'memory': [], 'fp_rate': [], 'mem_per_connection': []}
 
                 results[key]['memory'].append(memory_bits)
+                results[key]['mem_per_connection'].append(memory_bits/n_connections)
                 results[key]['fp_rate'].append(fp_rate)
 
     fig, ax = plt.subplots()
@@ -104,10 +106,11 @@ def main(json_file, config_file):
         results.items(),
         key=lambda x: ordered_keys.index(x[0]) if x[0] in ordered_keys else len(ordered_keys)
     ):
-        if filter_type in ['bloom_part_2', 'bloom_std']:
+        if filter_type in ['bloom_part_2', 'bloom_std', 'bloom_part_3']:
             continue
         mem = values['memory']
         fpr = values['fp_rate']
+        mem_per_connection = values['mem_per_connection']
         if len(mem) != len(fpr):
             print(f"⚠️ Skipping '{filter_type}' due to mismatched data lengths ({len(mem)} vs {len(fpr)})")
             continue
@@ -115,19 +118,19 @@ def main(json_file, config_file):
         style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
         name = config.get("graph_names", {}).get(filter_type, filter_type)  # Use graph name or default to key
         if 'bloom' in filter_type:
-            ax.plot(mem, fpr, label=name, color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
+            ax.plot(mem_per_connection, fpr, label=name, color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
         else:
-            ax.step(mem, fpr, label=f"{name}", color=color, where='post', linestyle=tuple(style["linestyle"]), marker=style["marker"])
+            ax.step(mem_per_connection, fpr, label=f"{name}", color=color, where='post', linestyle=tuple(style["linestyle"]), marker=style["marker"])
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
-    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.3f}%"))
+    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.2f}%"))
     ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
 
-    ax.set_xlabel("Available Memory (bits)")
+    ax.set_xlabel("Available Memory per Connection (bits)")
     ax.set_ylabel("False Positive Rate")
-    ax.set_xlim(left=min(min(values['memory']) for values in results.values() if values['memory']),
-                right=max(max(values['memory']) for values in results.values() if values['memory']))  # Adjust x-axis limits
+    ax.set_xlim(left=min(min(values['mem_per_connection']) for values in results.values() if values['mem_per_connection']),
+                right=max(max(values['mem_per_connection']) for values in results.values() if values['mem_per_connection']))  # Adjust x-axis limits
 
     if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
         ax.legend(
@@ -148,7 +151,7 @@ def main(json_file, config_file):
     ax.set_title("")  # Keep minimal for paper inclusion
 
     fig.tight_layout()
-    output_file = "figures/fp-var_memory.svg"
+    output_file = "figures/fp-var_memory_per_connection.svg"
     plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 

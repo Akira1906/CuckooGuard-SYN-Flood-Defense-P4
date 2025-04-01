@@ -104,7 +104,7 @@ class FPTest(Test):
         n_benign_connections = int(tu.test_param_get("n_benign_connections"))
         n_test_packets = int(tu.test_param_get("n_test_packets"))
         
-        self.packet_processing_delay = 0.00025
+        self.packet_processing_delay = 0.001
 
 
         connections_set = self.generate_n_connections(n_connections=n_benign_connections)

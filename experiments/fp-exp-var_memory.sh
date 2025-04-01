@@ -1,5 +1,5 @@
 
-for memory in $(seq 45000 1000 80000); do
+for memory in $(seq 45000 1000 100000); do
     echo "Start experiment run with $memory bits available memory"
     ./compare-fp-rate.sh \
         --n_benign_connections 5000 \
@@ -11,3 +11,4 @@ for memory in $(seq 45000 1000 80000); do
 done
 
 python fp-exp-var_memory_visualize.py
+python fp-exp-var_mem_per_connection_visualize.py
