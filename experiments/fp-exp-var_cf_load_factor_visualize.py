@@ -84,6 +84,11 @@ def main(json_file, config_file):
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
     ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.2f}%"))
     ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
+    
+    # # Define x-axis ticks to include 0.85
+    # x_ticks = sorted(set(ax.get_xticks()).union({0.85}))  # Ensure 0.85 is included
+    # ax.set_xticks(x_ticks)
+    
     ax.set_xlabel("Maximum Load Factor (Cuckoo Filter)")  # Update x-axis label
     ax.set_ylabel("False Positive Rate")
     ax.set_xlim(left=min(min(values['load_factor']) for values in results.values() if values['load_factor']),

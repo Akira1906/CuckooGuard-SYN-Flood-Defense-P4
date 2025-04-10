@@ -57,7 +57,7 @@ def main(json_file, config_file):
 
     # Apply matplotlib configuration
     mpl.rcParams.update({
-        "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]+0.5),
+        "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]+0.8),
         "font.size": mpl_config["font"]["size"],
         "font.family": mpl_config["font"]["family"],
         "font.sans-serif": mpl_config["font"]["sans-serif"],

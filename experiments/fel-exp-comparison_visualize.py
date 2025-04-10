@@ -21,7 +21,7 @@ def main():
     mpl_config = config.get("matplotlib_config", {})
     figure_dimensions = config.get("figure_dimensions", {})
     fig_width = figure_dimensions.get("width", 6)
-    fig_height = figure_dimensions.get("height", 3.2) - 0.3
+    fig_height = figure_dimensions.get("height", 3.2)
     mpl.rcParams.update({
         "figure.figsize": (fig_width, fig_height),
         "font.size": mpl_config.get("font", {}).get("size", 9),
