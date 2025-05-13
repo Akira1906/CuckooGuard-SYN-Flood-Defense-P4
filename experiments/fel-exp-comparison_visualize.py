@@ -2,6 +2,12 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import os
+# import matplotlib.font_manager as fm
+
+# font_path = "/usr/share/fonts/truetype/msttcorefonts/times.ttf"
+# prop = fm.FontProperties(fname=font_path)
+# plt.rcParams['font.family'] = prop.get_name()
+
 
 def load_config(config_path):
     if not os.path.exists(config_path):
@@ -37,7 +43,7 @@ def main():
         "xtick.direction": mpl_config.get("ticks", {}).get("xtick_direction", "in"),
         "ytick.direction": mpl_config.get("ticks", {}).get("ytick_direction", "in"),
         "pdf.fonttype": mpl_config.get("output", {}).get("pdf_fonttype", 42),
-        "svg.fonttype": mpl_config.get("output", {}).get("svg_fonttype", "none")
+        "svg.fonttype": mpl_config.get("output", {}).get("svg_fonttype", "none"),
     })
 
     # Extract filter colors and graph names from config
@@ -83,7 +89,7 @@ def main():
 
     ordered_keys = bloom_filters + cuckoo_filters
     for filter_type, (x, y) in sorted(
-        {"varbloom": (results['time_seconds'], results['total_elements']),
+        {"varbloom_time_decay": (results['time_seconds'], results['total_elements']),
          "cuckoo": (cuckoo_results['time_seconds'], cuckoo_results['n_elements'])}.items(),
         key=lambda x: ordered_keys.index(x[0]) if x[0] in ordered_keys else len(ordered_keys)
     ):
@@ -93,6 +99,8 @@ def main():
         color = filter_colors.get(filter_type, "#000000")  # Default to black if not in dictionary
         style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
         name = graph_names.get(filter_type, filter_type)  # Use graph name or default to key
+        if name == "Time-decaying Bloom Filter":
+            name = "Time-decaying Bloom Filter (" + "t" + "=5s)"
         # ax.plot(x, y, label=f"{name}", color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
         ax.step(x, y, label=f"{name}", color=color, where='post', linestyle=tuple(style["linestyle"]), marker=style["marker"])  # 'post' ensures the step remains at the previous value until the next change
         
@@ -131,7 +139,7 @@ def main():
     ax.set_ylim(bottom=0)
     fig.tight_layout()
     output_file = "figures/fel-comparison.svg"
-    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
+    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

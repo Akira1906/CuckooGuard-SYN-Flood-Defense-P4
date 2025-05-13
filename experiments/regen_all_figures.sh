@@ -4,3 +4,4 @@ python fp-exp-var_connections_visualize.py
 python fp-exp-var_memory_visualize.py
 python recirc-exp-var_load_factor_visualize.py
 python fp-exp-var_mem_per_connection_visualize.py
+python fp-theo-mem_per_connection_visualize.py

@@ -119,7 +119,7 @@ def main(json_file, config_file):
     ax.set_ylim(bottom=0.1)
     fig.tight_layout()
     output_file = "figures/recirc-var_load_factor.svg"
-    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
+    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

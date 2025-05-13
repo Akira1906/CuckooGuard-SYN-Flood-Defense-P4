@@ -57,7 +57,7 @@ def main(json_file, config_file):
 
     # Apply matplotlib configuration
     mpl.rcParams.update({
-        "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]+0.8),
+        "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]),
         "font.size": mpl_config["font"]["size"],
         "font.family": mpl_config["font"]["family"],
         "font.sans-serif": mpl_config["font"]["sans-serif"],
@@ -152,7 +152,7 @@ def main(json_file, config_file):
 
     fig.tight_layout()
     output_file = "figures/fp-var_memory_per_connection.svg"
-    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
+    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

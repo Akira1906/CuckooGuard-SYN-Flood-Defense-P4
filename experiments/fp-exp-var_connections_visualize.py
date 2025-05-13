@@ -157,7 +157,7 @@ def main(json_file):
 
     fig.tight_layout()
     output_file = "figures/fp-var_connections.svg"
-    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
+    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

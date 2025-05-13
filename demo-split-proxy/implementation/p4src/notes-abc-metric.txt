@@ -1,0 +1,123 @@
+apply{
+        if(meta.tcp_valid == 1 && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1){
+            set_bloom_1_a();
+            set_bloom_2_a();
+            set_bloom_3_a();
+            set_bloom_4_a();
+            set_bloom_5_a();
+            set_bloom_6_a();
+            set_bloom_7_a();
+            meta.bloom_read_passed=0;
+            //drop(); //for full parallelization, postpone to triage table
+        }else{
+            get_bloom_1_a();
+            get_bloom_2_a();
+            get_bloom_3_a();
+            get_bloom_4_a();
+            get_bloom_5_a();
+            get_bloom_6_a();
+            get_bloom_7_a();
+            if(meta.bloom_read_1==1 && meta.bloom_read_2==1&& meta.bloom_read_3==1&& meta.bloom_read_4==1&& meta.bloom_read_5==1&& meta.bloom_read_6==1&& meta.bloom_read_7==1){
+                meta.bloom_read_passed=1;
+            }else{
+                meta.bloom_read_passed=0;
+            }
+        }
+
+}
+
+    action set_bloom_1_a(){
+           hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_1.write(meta.bloom_hash_1, (bit<1>) 1);
+    }
+    action set_bloom_2_a(){
+            hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
+    }
+    action get_bloom_1_a(){
+             hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+
+         reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+    }
+    action get_bloom_2_a(){
+             hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_2.read(meta.bloom_read_2, meta.bloom_hash_2);
+    }
+
+     action set_bloom_3_a(){
+            hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
+    }
+    action get_bloom_3_a(){
+             hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+
+         reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+    }
+
+     action set_bloom_4_a(){
+            hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
+    }
+    action get_bloom_4_a(){
+             hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+
+         reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+    }
+
+     action set_bloom_5_a(){
+            hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
+    }
+    action get_bloom_5_a(){
+             hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+
+         reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+    }
+
+     action set_bloom_6_a(){
+            hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
+    }
+    action get_bloom_6_a(){
+             hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+
+         reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+    }
+
+     action set_bloom_7_a(){
+            hash(meta.bloom_hash_2, HashAlgorithm.crc32, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+        reg_bloom_2.write(meta.bloom_hash_2, (bit<1>) 1);
+    }
+    action get_bloom_7_a(){
+             hash(meta.bloom_hash_1, HashAlgorithm.crc16, (bit<32>)0, 
+            {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.tcp.src_port, hdr.tcp.dst_port}, 
+            (bit<32>)4095);
+
+         reg_bloom_1.read(meta.bloom_read_1, meta.bloom_hash_1);
+    }
