@@ -41,6 +41,7 @@ typedef struct map_val_t {
         uint32_t ip_id;
         uint32_t delta;
         uint32_t map_state;	
+        // change to uint8_t to conserve memory
 
 } map_val_t;
 

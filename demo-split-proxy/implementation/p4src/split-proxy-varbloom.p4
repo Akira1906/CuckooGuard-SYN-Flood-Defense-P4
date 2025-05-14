@@ -1042,6 +1042,8 @@ control SwitchIngress(
         }
 
         // Bloom Filter set and get
+        // The if clauses are here to support the automated variability of #hash functions k
+        // For an actual well performing implementation the number of hash functions should be hard coded
         
         if(hdr.tcp.isValid() && standard_metadata.ingress_port == SERVER_PORT && hdr.tcp.flag_ece==1 && hdr.tcp.flag_urg==0 && hdr.tcp.flag_ack==0){
             increment_bloom_counters();

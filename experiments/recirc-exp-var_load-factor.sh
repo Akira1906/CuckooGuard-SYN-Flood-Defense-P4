@@ -1,6 +1,6 @@
 AVAILABLE_MEMORY_BIT=84227
 N_BENIGN_CONNECTIONS=5000 # standard at 0.95
-N_TEST_PACKETS=3000
+N_TEST_PACKETS=1000
 a=0.95
 
 b=4 # number of entries per bucket
@@ -57,7 +57,7 @@ save_experiment_json() {
 for load_factor in $(seq 0.3 0.05 0.95); do
     echo "Start experiment run with load factor: $load_factor"
 
-    for i in {1..4}; do
+    for i in {1..30}; do
         echo "Iteration $i for load factor: $load_factor"
 
         n_preloaded_connections=$(awk "BEGIN {print int($n_fingerprints * $load_factor)}")

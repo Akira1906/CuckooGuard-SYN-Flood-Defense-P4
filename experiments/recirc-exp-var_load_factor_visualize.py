@@ -4,6 +4,7 @@ import matplotlib as mpl
 import sys
 import os
 from collections import defaultdict
+import math
 
 def load_config(config_file):
     with open(config_file, 'r') as f:
@@ -33,6 +34,14 @@ def main(json_file, config_file):
         results['load_factor'].append(load_factor)
         results['recirc_overhead'].append(sum(overheads) / len(overheads))
 
+    # Calculate the standard deviation for each unique load factor
+    results['recirc_overhead_std'] = []
+    for load_factor, overheads in aggregated_results.items():
+        mean = sum(overheads) / len(overheads)
+        variance = sum((x - mean) ** 2 for x in overheads) / len(overheads)
+        stddev = math.sqrt(variance)
+        results['recirc_overhead_std'].append(stddev)
+
     # === Apply Matplotlib Configuration from JSON ===
     mpl.rcParams.update({
         "figure.figsize": (config["figure_dimensions"]["width"], config["figure_dimensions"]["height"]),
@@ -60,8 +69,8 @@ def main(json_file, config_file):
     fig, ax = plt.subplots()
 
     ordered_keys = ["cuckoo_var_load"]
-    for filter_type, (x, y) in sorted(
-        {"cuckoo_var_load": (results['load_factor'], results['recirc_overhead'])}.items(),
+    for filter_type, (x, y, yerr) in sorted(
+        {"cuckoo_var_load": (results['load_factor'], results['recirc_overhead'], results['recirc_overhead_std'])}.items(),
         key=lambda x: ordered_keys.index(x[0]) if x[0] in ordered_keys else len(ordered_keys)
     ):
         if len(x) != len(y):
@@ -70,8 +79,14 @@ def main(json_file, config_file):
         color = filter_colors.get(filter_type, "#000000")  # Default to black if not in dictionary
         name = graph_names.get(filter_type, filter_type)  # Use graph name or default to key
         style = filter_styles.get(filter_type, {"linestyle": (0, (1, 1)), "marker": "o"})  # Default style
-        ax.plot(x, y, label="Cuckoo Filter (var. α)", color=color, linestyle=tuple(style["linestyle"]), marker=style["marker"])
-
+        # Plot with error bars
+          # Plot mean line
+        ax.plot(x, y, label="Cuckoo Filter (var. α)", color=color,
+                linestyle=tuple(style["linestyle"]), marker=style["marker"])
+        # Fill between mean ± stddev
+        y_lower = [a - b for a, b in zip(y, yerr)]
+        y_upper = [a + b for a, b in zip(y, yerr)]
+        ax.fill_between(x, y_lower, y_upper, color=color, alpha=0.25, label="Std. Dev. (σ)")
         # Highlight x=0.85
         highlight_x = 0.85
         if highlight_x in x:

@@ -6,7 +6,7 @@
     N_TEST_PACKETS=100000
     ALWAYS_RETEST=true
     CUCKOO_VAR_LOAD=0.85
-    FAKE=false
+    TEST=false
 
     run_bloom_part1=false
     run_bloom_part2=false
@@ -19,7 +19,7 @@
 
 # Process named arguments
     ARGS=$(getopt -o c:h:m:r:o:l:f --long \
-        n_benign_connections:,n_test_packets:,available_memory_bit:,always_retest:,output_file:,cuckoo_var_load:,fake \
+        n_benign_connections:,n_test_packets:,available_memory_bit:,always_retest:,output_file:,cuckoo_var_load:,test \
         -- "$@")
 
     if [[ $? -ne 0 ]]; then
@@ -37,13 +37,13 @@
             -r|--always_retest) ALWAYS_RETEST="$2"; shift 2 ;;
             -o|--output_file) OUTPUT_FILE="$2"; shift 2 ;;
             -l|--cuckoo_var_load) CUCKOO_VAR_LOAD="$2"; shift 2 ;;
-            -f|--fake) FAKE=true; shift 1 ;;
+            -f|--test) TEST=true; shift 1 ;;
             --) shift; break ;;
             *) break ;;
         esac
     done
 
-    if [ "$FAKE" == "true" ]; then
+    if [ "$TEST" == "true" ]; then
         run_bloom_part1=false
         run_bloom_part2=false
         run_bloom_part3=false
@@ -667,8 +667,8 @@
         print theo_fp_rate;
     }')
 
-# Fake the experimental results and just use the calculated ones instead
-    if [ "$FAKE" = true ]; then
+# Test the experimental results and just use the calculated ones instead
+    if [ "$TEST" = true ]; then
         # Swap experimental FP rates with theoretical FP rates
         exp_fp_rate_bloom_part_2=$theo_fp_rate_bloom_part_2
         exp_fp_rate_bloom_part_3=$theo_fp_rate_bloom_part_3
@@ -680,7 +680,7 @@
         exp_fp_rate_cuckoo_py=$theo_fp_rate_cuckoo
         exp_fp_rate_cuckoo_var_load=$theo_fp_rate_cuckoo_var_load
 
-        # Calculate fake fp_hits from theoretical values
+        # Calculate test fp_hits from theoretical values
         fp_hits_bloom_part_2=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_2 * $N_TEST_PACKETS)}")
         fp_hits_bloom_part_3=$(awk "BEGIN {print int($theo_fp_rate_bloom_part_3 * $N_TEST_PACKETS)}")
         fp_hits_bloom_std=$(awk "BEGIN {print int($theo_fp_rate_bloom_std * $N_TEST_PACKETS)}")
