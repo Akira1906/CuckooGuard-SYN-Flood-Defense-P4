@@ -100,9 +100,9 @@ def main(config_file):
         )
 
     # Save the plot
-    output_file = "figures/fp-theo-memory_per_connection.svg"
+    output_file = "figures/fp-theo-memory_per_connection.png"
     fig.tight_layout()
-    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
+    plt.savefig(output_file, format="png", dpi=600, transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

@@ -138,8 +138,8 @@ def main():
     ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
     ax.set_ylim(bottom=0)
     fig.tight_layout()
-    output_file = "figures/fel-comparison.svg"
-    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
+    output_file = "figures/fel-comparison.png"
+    plt.savefig(output_file, format="png", dpi=600, transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

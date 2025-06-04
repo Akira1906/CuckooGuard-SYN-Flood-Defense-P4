@@ -64,7 +64,7 @@ def main(namespace, device, IFINDEX = None, RUNS_IN_MININET = 0):
         parent="ffff:fff3", classid=1, direct_action=True)
 
     print(
-        f"SmartCookie Server Agent: TC egress program is loaded in namespace '{namespace}', hit CTRL+C to stop.")
+        f"CuckooGuard Server Agent: TC egress program is loaded in namespace '{namespace}', hit CTRL+C to stop.")
     try:
         while True:
             time.sleep(1)

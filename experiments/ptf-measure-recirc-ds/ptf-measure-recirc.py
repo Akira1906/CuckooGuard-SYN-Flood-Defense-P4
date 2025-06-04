@@ -137,26 +137,35 @@ class RecircTest(Test):
         
         self.packet_processing_delay = 0.00025
         # This counter counts all the packets which are not relevant to the test
-        self.setup_packet_count = 0
+        # self.deletion_packet_count = 0
 
         # Step 1: Fill the filter with benign connections
         connections_set = self.generate_n_connections(n_connections=n_benign_connections)
         self.add_connections_to_filter(connections_set)
 
+        sleep(0.5)
+        # Read packet count before the experiment
+        initial_packet_count = self.read_counter()
+
         # Step 2: Add and remove a new element repeatedly
         self.perform_add_remove_test(n_test_packets, connections_set)
 
-        sleep(1)
+
+        sleep(0.5)
         # Step 3: Retrieve counter value from P4 program   
-        packet_count = self.read_counter() - self.setup_packet_count
-    
+        packet_count = self.read_counter() - initial_packet_count
+
+        # Now remove the packets that were not insertion related i.e. deletions, we have exactly n_test_packets deletions since deletions don't require recirculation
+        packet_count -= n_test_packets
         
         print("START RESULT")
         print(f"{packet_count}")
         print("END RESULT")
         
     def read_counter(self):
-        return self.ss.counter_read("ingressCounter", 0)[1]
+        counter_val = self.ss.counter_read("ingressCounter", 0)[1]
+        print(f"counter_val: {counter_val}")
+        return counter_val
 
     def perform_add_remove_test(self, n_test_packets, connections_in_filter):
         for i in range(n_test_packets):
@@ -240,14 +249,14 @@ class RecircTest(Test):
         # )
         
         # tu.verify_packet(self, ack_pkt, self.client_iface)
-        self.setup_packet_count += 1
+        # self.deletion_packet_count += 1
 
-    def get_p4_counter_value(self):
-        # Retrieve the counter value from the P4 program
-        counter_entry = sh.DirectCounterEntry("ingressCounter").packet_count
-        print(counter_entry)
+    # def get_p4_counter_value(self):
+    #     # Retrieve the counter value from the P4 program
+    #     counter_entry = sh.DirectCounterEntry("ingressCounter").packet_count
+    #     # print("Counter" + str(counter_entry))
         
-        return counter_entry
+    #     return counter_entry
 
     def generate_n_connections(self, n_connections):
         connections_ip_port = set()  # e.g. (10.0.0.1, 3737)
@@ -261,7 +270,7 @@ class RecircTest(Test):
         return connections_ip_port
     
     def filter_connection_insertion(self, client_ip, client_port):
-        # Step 1: trigger insertion into Filter (packet from ebpf to P4 signaling to add the connection to the Filter)
+        # Trigger insertion into Filter (packet from ebpf to P4 signaling to add the connection to the Filter)
 
         ack_pkt = (
             Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /
@@ -293,7 +302,7 @@ class RecircTest(Test):
             )
 
             tu.send_packet(self, self.ebpf_iface, ack_pkt)
-            self.setup_packet_count += 1
+            # self.setup_packet_count += 1
 
             sleep(self.packet_processing_delay)
 
@@ -307,7 +316,7 @@ class RecircTest(Test):
                 Raw(load=tcp_load)
             )
             tu.send_packet(self, self.client_iface, ack_pkt)
-            self.setup_packet_count += 1
+            # self.setup_packet_count += 1
 
             ack_pkt = (
                 Ether(dst=self.server_mac, src=self.switch_server_mac, type=0x0800) /

@@ -131,6 +131,9 @@ def main(json_file, config_file):
     output_file = "figures/fp-var_cf_load_factor.svg"
     plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
+    output_file = "figures/fp-var_cf_load_factor.png"
+    plt.savefig(output_file, format="png", dpi=600, transparent=False, bbox_inches='tight', pad_inches=0)
+    print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":
     json_file_name = "results/fp-var_cf_load_factor.json"  # Hardcoded relative path to the JSON file

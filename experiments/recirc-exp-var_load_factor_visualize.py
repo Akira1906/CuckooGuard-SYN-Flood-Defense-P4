@@ -23,7 +23,8 @@ def main(json_file, config_file):
         load_factor = entry['load_factor']
         n_test = entry['n_test_packets']
         packet_count = entry['packet_count']
-
+        # if load_factor == 0.6:
+        #     print (packet_count)
         recirc_overhead = (packet_count - n_test) / n_test * 100  # Calculate y-axis value
 
         aggregated_results[load_factor].append(recirc_overhead)
@@ -33,7 +34,7 @@ def main(json_file, config_file):
     for load_factor, overheads in aggregated_results.items():
         results['load_factor'].append(load_factor)
         results['recirc_overhead'].append(sum(overheads) / len(overheads))
-
+    print(results)
     # Calculate the standard deviation for each unique load factor
     results['recirc_overhead_std'] = []
     for load_factor, overheads in aggregated_results.items():
@@ -92,7 +93,7 @@ def main(json_file, config_file):
         if highlight_x in x:
             highlight_y = y[x.index(highlight_x)]
             # Vertical line stopping at the graph
-            ax.plot([highlight_x, highlight_x], [0.1, highlight_y], color="blue", linestyle="--", linewidth=0.6)
+            ax.plot([highlight_x, highlight_x], [0.01, highlight_y], color="blue", linestyle="--", linewidth=0.6)
             # Horizontal line extending left
             ax.plot([0.1, highlight_x], [highlight_y, highlight_y], color="blue", linestyle="--", linewidth=0.6)
             # ax.axhline(y=highlight_y, xmax=highlight_x / max(x), color="blue", linestyle="--", linewidth=0.6)
@@ -107,7 +108,7 @@ def main(json_file, config_file):
     ax.set_yscale("log")
     ax.set_xlabel("Load Factor (α)")  # Update x-axis label
     ax.set_ylabel("Recirculation Overhead")  # Update y-axis label
-    ax.set_xlim(left=min(results['load_factor']), right=max(results['load_factor']))
+    ax.set_xlim(left=0.4, right=0.95) # min(results['load_factor']) max(results['load_factor']
     
     if "bbox_to_anchor" in config["matplotlib_config"]["legend"]:
         ax.legend(
@@ -131,14 +132,18 @@ def main(json_file, config_file):
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
     ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.1f}%"))
     ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
-    ax.set_ylim(bottom=0.1)
+    ax.set_ylim(bottom=0.05)
+
     fig.tight_layout()
     output_file = "figures/recirc-var_load_factor.svg"
-    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
+    plt.savefig(output_file, format="svg", transparent=True, bbox_inches='tight', pad_inches=0)
+    print(f"✅ Plot saved as '{output_file}'")
+    output_file = "figures/recirc-var_load_factor.png"
+    plt.savefig(output_file, format="png", dpi=600, transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":
-    json_file_name = "results/recirc-experiment_history.json"  # Hardcoded relative path to the JSON file
+    json_file_name = "results/new-recirc-experiment_history.json"  # Hardcoded relative path to the JSON file
     config_file_name = "figures/matplotlib_config.json"  # Path to the configuration file
     json_path = os.path.abspath(json_file_name)
     config_path = os.path.abspath(config_file_name)

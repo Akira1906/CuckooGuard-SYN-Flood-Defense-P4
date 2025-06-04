@@ -1,6 +1,7 @@
+#!/bin/bash
 AVAILABLE_MEMORY_BIT=84227
 N_BENIGN_CONNECTIONS=5000 # standard at 0.95
-N_TEST_PACKETS=1000
+N_TEST_PACKETS=1
 a=0.95
 
 b=4 # number of entries per bucket
@@ -19,7 +20,7 @@ n_buckets=$(awk "BEGIN {print int($AVAILABLE_MEMORY_BIT / ($fingerprint_size * $
 n_fingerprints=$(awk "BEGIN {print int($n_buckets * $b)}")
 
 save_experiment_json() {
-    results_json="results/recirc-experiment_history.json"
+    results_json="results/new-recirc-experiment_history.json"
 
     # Create new experiment entry
     new_entry=$(jq -n \
@@ -53,11 +54,11 @@ save_experiment_json() {
 
     echo "✅ Experiment saved to $results_json"
 }
-
+# sudo --preserve-env=PATH,HOME nohup ./recirc-exp-var_load-factor.sh > output.log 2>&1 &
 for load_factor in $(seq 0.3 0.05 0.95); do
     echo "Start experiment run with load factor: $load_factor"
-
-    for i in {1..30}; do
+    for i in {1..1000}; do
+        # sudo -v
         echo "Iteration $i for load factor: $load_factor"
 
         n_preloaded_connections=$(awk "BEGIN {print int($n_fingerprints * $load_factor)}")

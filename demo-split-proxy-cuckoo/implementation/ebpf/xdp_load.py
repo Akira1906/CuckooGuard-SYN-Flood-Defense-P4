@@ -40,7 +40,7 @@ def main(namespace, device, xdp_offload_mode="XDP_FLAGS_DRV_MODE"):
     fn = b.load_func("xdp_ingress", mode)
     b.attach_xdp(device, fn, flags)
 
-    print("XDP ingress program loaded in namespace '{}', hit CTRL+C to stop.".format(namespace))
+    print("CuckooGuard Server Agent: XDP ingress program loaded in namespace '{}', hit CTRL+C to stop.".format(namespace))
     try:
         while True:
             time.sleep(1)

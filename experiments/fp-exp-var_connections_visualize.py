@@ -156,8 +156,8 @@ def main(json_file):
     ax.set_title("")  # Keep minimal for paper inclusion
 
     fig.tight_layout()
-    output_file = "figures/fp-var_connections.svg"
-    plt.savefig(output_file, format="svg", transparent=False, bbox_inches='tight', pad_inches=0)
+    output_file = "figures/fp-var_connections.png"
+    plt.savefig(output_file, format="png", dpi=600, transparent=False, bbox_inches='tight', pad_inches=0)
     print(f"✅ Plot saved as '{output_file}'")
 
 if __name__ == "__main__":

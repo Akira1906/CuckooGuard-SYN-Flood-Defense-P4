@@ -124,7 +124,7 @@ def main(json_file, config_file):
 
     ax.set_yscale("log")  # Set y-axis to logarithmic scale
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
-    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.2f}%"))
+    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda y, _: f"{y:.3f}%"))
     ax.tick_params(axis='y', which='both', labelsize=mpl_config["font"]["size"])
 
     ax.set_xlabel("Available Memory per Connection (bits)")
