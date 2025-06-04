@@ -4,7 +4,7 @@ CuckooGuard is a memory-efficient SYN flood defense architecture developed for S
 
 This project is part of a Master's Thesis at National Tsing Hua University and builds upon recent academic work to make practical, scalable DDoS protection viable on resource-constrained programmable network devices.
 
-- [Paper: CUCKOOGUARD: A Memory-Efficient SYN Flood Defense Architecture for SmartNICs](docs/CuckooGuard_Paper.pdf)
+Paper: [CUCKOOGUARD: A Memory-Efficient SYN Flood Defense Architecture for SmartNICs](docs/CuckooGuard_Paper.pdf)
 
 ---
 
