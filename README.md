@@ -82,32 +82,29 @@ The implementation was tested on:
 For example:
 ``` bash
 sudo apt install linux-tools-5.15.0-131-generic
-
+```
 ---
 
 ## Running CuckooGuard
 
-To run the architecture or specific experiments, refer to the following scripts included in the repository.
+For detailed instructions on running the architecture or specific experiments, refer to the following scripts included in the repository.
 
 ### Integration Test
 
 To launch the full integration test of the Cuckoo-based split proxy:
 
-```bash
-./demo-split-proxy-cuckoo/integration-test/integration-test-split-proxy-cuckoo.sh
-```
+[`demo-split-proxy-cuckoo/integration-test/integration-test-split-proxy-cuckoo.sh`](demo-split-proxy-cuckoo/integration-test/integration-test-split-proxy-cuckoo.sh)
 
-This script sets up BMv2, P4Runtime, the eBPF agents, and a test network application inside Mininet namespaces.
+This script sets up BMv2, P4Runtime, the eBPF agents, and a test network application using Mininet namespaces.
 
 ### Evaluation and Comparison
 
 To run a comparative benchmark of all available implementations (e.g., Bloom filter vs. Cuckoo filter):
 
-```bash
-./experiments/compare-fp-rate.sh
-```
+[`experiments/compare-fp-rate.sh`](experiments/compare-fp-rate.sh)
 
-This script executes multiple test runs and gathers false positive rate and performance data across implementations.
+This script executes multiple test runs and reports false positive rates and performance metrics for each variant.
+
 
 ### Manual Execution Outline
 
