@@ -1,5 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./demo-split-proxy/implementation/ebpf"
-    ]
-}
